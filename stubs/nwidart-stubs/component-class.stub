@@ -1,0 +1,19 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $NAMESPACE$;
+
+use Illuminate\View\Component;
+use Illuminate\View\View;
+
+class $CLASS$ extends Component
+{
+
+    public function __construct() {}
+
+    public function render(): View|string
+    {
+        return view('$LOWER_NAME$::$COMPONENT_NAME$');
+    }
+}

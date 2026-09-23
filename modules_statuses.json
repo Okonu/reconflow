@@ -1,0 +1,6 @@
+{
+    "Audit": true,
+    "Users": true,
+    "Rbac": true,
+    "DataProtection": true
+}

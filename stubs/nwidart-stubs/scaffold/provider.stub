@@ -1,0 +1,22 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $NAMESPACE$;
+
+use Nwidart\Modules\Support\ModuleServiceProvider;
+use Illuminate\Console\Scheduling\Schedule;
+
+class $CLASS$ extends ModuleServiceProvider
+{
+
+    protected string $name = '$MODULE$';
+
+    protected string $nameLower = '$LOWER_NAME$';
+
+    protected array $providers = [
+        EventServiceProvider::class,
+        RouteServiceProvider::class,
+    ];
+
+}

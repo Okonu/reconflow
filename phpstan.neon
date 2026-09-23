@@ -1,0 +1,17 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - app
+        - Modules
+    excludePaths:
+        - Modules/*/tests/*
+        - Modules/*/resources/*
+        - Modules/*/config/*
+    databaseMigrationsPath:
+        - Modules/Users/database/migrations
+        - Modules/Rbac/database/migrations
+        - Modules/Audit/database/migrations
+    treatPhpDocTypesAsCertain: false

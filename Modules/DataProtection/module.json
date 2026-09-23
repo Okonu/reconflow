@@ -1,0 +1,11 @@
+{
+    "name": "DataProtection",
+    "alias": "dataprotection",
+    "description": "ReconFlow DataProtection module",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\DataProtection\\Providers\\DataProtectionServiceProvider"
+    ],
+    "files": []
+}

@@ -1,0 +1,22 @@
+{
+    "name": "reconflow/rbac",
+    "description": "ReconFlow Rbac module",
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Rbac\\": "app/",
+            "Modules\\Rbac\\Database\\Factories\\": "database/factories/",
+            "Modules\\Rbac\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Rbac\\Tests\\": "tests/"
+        }
+    }
+}

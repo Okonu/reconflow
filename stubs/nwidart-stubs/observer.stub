@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $NAMESPACE$;
+
+use $MODEL_NAMESPACE$\$NAME$;
+
+class $NAME$Observer
+{
+
+    public function created($NAME$ $NAME_VARIABLE$): void {}
+
+    public function updated($NAME$ $NAME_VARIABLE$): void {}
+
+    public function deleted($NAME$ $NAME_VARIABLE$): void {}
+
+    public function restored($NAME$ $NAME_VARIABLE$): void {}
+
+    public function forceDeleted($NAME$ $NAME_VARIABLE$): void {}
+}

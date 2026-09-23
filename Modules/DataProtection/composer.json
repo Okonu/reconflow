@@ -1,0 +1,22 @@
+{
+    "name": "reconflow/dataprotection",
+    "description": "ReconFlow DataProtection module",
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\DataProtection\\": "app/",
+            "Modules\\DataProtection\\Database\\Factories\\": "database/factories/",
+            "Modules\\DataProtection\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\DataProtection\\Tests\\": "tests/"
+        }
+    }
+}

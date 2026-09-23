@@ -1,0 +1,14 @@
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+		-X-Powered-By
+	}
+
+	@internal path /metrics
+	respond @internal 404
+
+	reverse_proxy app:8000
+}

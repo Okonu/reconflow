@@ -1,0 +1,17 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $NAMESPACE$;
+
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Contracts\Queue\ShouldQueue;
+
+class $CLASS$ implements ShouldQueue
+{
+    use InteractsWithQueue;
+
+    public function __construct() {}
+
+    public function handle($event): void {}
+}
