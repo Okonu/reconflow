@@ -1,0 +1,11 @@
+{
+    "name": "Ingestion",
+    "alias": "ingestion",
+    "description": "ReconFlow Ingestion module",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ingestion\\Providers\\IngestionServiceProvider"
+    ],
+    "files": []
+}

@@ -36,6 +36,17 @@ final class PersonalData
         return substr($local, 0, 2).str_repeat(self::MASK, 2).' '.str_repeat(self::MASK, 3).' '.substr($local, -3);
     }
 
+    public static function maskRecord(string $dataset, array $record): array
+    {
+        foreach (FieldInventory::personalFields($dataset) as $field) {
+            if (array_key_exists($field, $record) && is_string($record[$field])) {
+                $record[$field] = self::maskPhone($record[$field]);
+            }
+        }
+
+        return $record;
+    }
+
     public static function scrubText(string $text): string
     {
         $text = preg_replace(self::API_KEY, '[REDACTED_KEY]', $text) ?? $text;

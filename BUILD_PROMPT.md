@@ -29,7 +29,7 @@ The audience for the demo is **senior business leaders**, so the UI must be clea
 3. **Segregation of duties.** The user who proposes an adjustment can never approve it. Enforce this server-side and test it.
 4. **Append-only audit log.** Every state change (ingestion, run, match override, exception transition, AI suggestion, approval, posting, sign-off, login) writes an immutable audit event. Hash-chain the events (each event stores `prev_hash` and `hash`) and add an endpoint that verifies the chain.
 5. **Idempotent, re-runnable runs.** A run for a given business date can be re-executed safely. A new run version supersedes the old one and keeps the history. Postings to the ERP use idempotency keys, so the same correction is never posted twice.
-6. **Data quality before matching.** Validate every source batch (schema, required fields, duplicates, row counts, freshness). Quarantine bad rows with reasons instead of silently dropping them.
+6. **Data quality before matching.** Validate every source batch (schema, required fields, duplicates, row counts, freshness). Quarantine bad rows with reasons instead of silently dropping them. Owner decisions 2026-09-24: sales business_date must equal the batch date; payment timestamps must fall inside the extract window; amounts with more than 2 decimals are quarantined, never rounded (values within 1e-9 of a 2-dp number count as that number); an exact duplicate row keeps the first and quarantines the copy; rows sharing a sales transaction_id or journal_id with different content are all quarantined; keys already loaded for the date on Append are refused with "already exists for this date: use Replace".
 7. **Everything configurable via env/DB config**, not hard-coded: tolerances, date windows, schedule, approval thresholds, AI on/off, AI model.
 
 ---
@@ -114,6 +114,7 @@ Detailed status → roll-up shown to business users, mirroring the brief's repor
 | `UNMATCHED_PAYMENT` | Exception | Payment with no corresponding sale (the brief's "Expected: Missing") |
 | `MISSING_POSTING` | Exception | Sale and payment match but nothing is posted in the ERP |
 | `DUPLICATE_PAYMENT` | Exception | Same receipt twice, or same reference + amount within 5 minutes |
+| `DUPLICATE_POSTING` | Exception | Two different POSTED journal lines for the same transaction_id (REVERSED lines excluded). Owner decision 2026-09-24 |
 
 ### 3.4 Matching rules (apply in this order; each result records `rule_id`)
 
@@ -157,7 +158,7 @@ samples/
   - Importing a source for a date that already has data asks the user to choose **Replace** or **Append**.
   - Replace creates a new batch version and keeps the old one for audit.
   - Re-running reconciliation afterwards creates a new run version (section 1, principle 5).
-- **Where parsing happens:** in the backend only, with PhpSpreadsheet in read-data-only mode for .xlsx and PHP's native CSV reader for .csv. **Only the `Data` sheet is read.** Reject `.xlsm` and other macro-enabled or unknown types, and anything whose content type doesn't match its extension. Staged uploads expire after 24h (scheduled purge).
+- **Where parsing happens:** in the backend only, with openspout (streaming) for .xlsx and PHP's native CSV reader for .csv; PhpSpreadsheet only generates the templates. **Only the `Data` sheet is read.** Reject `.xlsm` and other macro-enabled or unknown types, and anything whose content type doesn't match its extension. Staged uploads expire after 24h (scheduled purge).
 - **Safety:**
   - Every CSV/XLSX export escapes values starting with `=`, `+`, `-` or `@` to prevent formula injection.
   - Uploads, confirmations, cancellations and replacements are audited.
@@ -202,6 +203,7 @@ Passwords come from env (`DEMO_PASSWORD`). Access control is **permissions first
 
 - A Laravel scheduled command runs daily at a configured time (default 06:00 Africa/Nairobi): pull all three sources for the previous business date, run DQ checks, run reconciliation, run AI triage, send the summary. There is also a **"Run now"** button (Analyst+).
 - If a source is late or empty, don't run silently: mark the run `BLOCKED_DATA`, alert, and retry at a configured interval.
+- **Run now** defaults to the latest closed business date (its payment window closed at D+1 06:00 EAT), the same logic as the scheduled job. Any date can be chosen; a run for a date whose window is still open is `PROVISIONAL` (banner, timing exceptions expected, cannot be signed off). Re-running a date after the next date has been run marks the next date's run `STALE` (needs re-run). Owner decisions 2026-09-24.
 - **Daily summary notification:**
   - Metrics are computed deterministically; the LLM only phrases a 3–4 sentence narrative from those numbers, and a template is used if AI is off.
   - Deliver to an in-app notifications panel, and optionally via Slack webhook or SMTP if env vars are set.
@@ -271,6 +273,7 @@ Amount distribution: realistic small-ticket retail, roughly $5–$2,500, right-s
   - timing cut-off 22:00 on the business date
   - duplicate window 5 minutes
   - payments extract window: business date 00:00 to next day 06:00 EAT
+  - payment ownership (owner decision 2026-09-24): a payment belongs to its own timestamp date. The D run may match payments from D+1 00:00–06:00 against D sales, and a match claims the payment for D. Unmatched grace-window payments are not reported as UNMATCHED_PAYMENT on D. The D+1 run excludes payments claimed by the latest D run version and can match D's open PENDING_TIMING sales. Re-running D after D+1 exists marks D+1 STALE
   - fuzzy matching is one-to-one: any tie leaves both sales as MISSING_PAYMENT and the payment as UNMATCHED_PAYMENT.
 
 The generator's output must use **exactly the template schemas**, and it must be able to export any seeded day to xlsx in template format (`php artisan reconflow:seed --export=2026-09-22 --out=./export/`). That way seeded data, uploads and templates share one format.
@@ -326,7 +329,7 @@ reconflow/
     Rbac/                       # permission catalogue sync, roles, role assignment, lock-out guard   [Phase 1: built]
     Audit/                      # hash-chained logger, verifier, archive + checkpoint        [Phase 1: built]
     DataProtection/             # classification, masking, pseudonymiser, PII log processor  [Phase 1: built; retention/erasure later]
-    Ingestion/                  # connectors (mock + upload), staging, data quality, templates, mock source APIs, synthetic data
+    Ingestion/                  # connectors (mock + upload), staging, data quality, templates, mock source APIs, synthetic data   [Phase 2: built]
     Reconciliation/             # rules R1–R7, engine, runs, results, report exports, rule settings
     ExceptionManagement/        # exception workflow, assignment, SLA, run sign-off
     Adjustments/                # maker-checker approvals, ERP posting
@@ -387,7 +390,7 @@ Real source integrations; SSO/Azure AD; multi-currency/FX; multi-entity; high av
 Stop after each phase, summarise what exists, list assumptions made, and wait for review.
 
 1. **Foundation** ✅ *(built 2026-09-24)*: Laravel app with Users, Rbac, Audit and DataProtection modules; shared kernel in `app/`; migrations; session auth + permissions-first RBAC with policies; data classification, masking, pseudonymisation and PII-safe logging; hash-chained audit logger, verifier and automatic archive with checkpoints; health/readiness/metrics; Inertia shell with login; multi-stage Docker image (FrankenPHP), compose (app, worker, scheduler, postgres, caddy); CI (Pint, Larastan, ESLint, tsc, Vite build, Pest, GHCR push, optional SSH deploy). 85 Pest tests passing. *Checkpoint: `make up` boots; login works; CI green.*
-2. **Data:** synthetic generator (template-format export), golden/volume fixtures wired into tests, mock source APIs, connectors, **upload → staging → preview → confirm** API, template download endpoint, DQ validation + quarantine, reset demo data. *Checkpoint: 14 days seeded; DQ report visible via API.*
+2. **Data** ✅ *(built 2026-09-24)*: synthetic generator (template-format export), golden/volume fixtures wired into tests, mock source APIs, connectors, **upload → staging → preview → confirm** API, template download endpoint, DQ validation + quarantine, reset demo data. *Checkpoint: 14 days seeded; DQ report visible via API.*
 3. **Engine:** rules R1–R7, engine, run versioning, scheduler, run-now endpoint, all rule/golden/idempotency tests. *Checkpoint: golden test passes; 50k perf test passes.*
 4. **Workflow:** exceptions, state machine, assignment/SLA, adjustments, approvals with SoD and thresholds, mock ERP posting with idempotency, run sign-off, notifications. *Checkpoint: full API flow scripted in a test.*
 5. **AI assist:** Claude triage client with schema validation, batching, fallback, storage of suggestions and human decisions; narrative summary. Include the `redact()` layer, override-reason capture, kill switch, AI oversight panel and eval set. *Checkpoint: works with a key and without one; governance tests pass.*
@@ -399,7 +402,7 @@ Stop after each phase, summarise what exists, list assumptions made, and wait fo
 ## 14. Demo script the finished app must support (≈5 minutes)
 
 1. Log in as **Analyst**. The dashboard shows 14 days of history: match rate ~96%, value at variance, open exceptions, and "~2h 45m saved today vs manual baseline".
-2. Click **Run now** for today and watch it complete in seconds. Open the run's DQ report showing quarantined bad rows.
+2. Click **Run now** for the latest closed business date and watch it complete in seconds. Open the run's DQ report showing quarantined bad rows.
 3. Open the **Reconciliation report**: filter to Variance, then export XLSX.
 4. Open an **under-payment exception**: see the source records side by side, the rule that fired, and the AI suggestion. Accept the suggestion and propose a write-off adjustment.
 5. Try to approve your own adjustment: **blocked** (segregation of duties).

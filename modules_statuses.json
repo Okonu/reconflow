@@ -2,5 +2,6 @@
     "Audit": true,
     "Users": true,
     "Rbac": true,
-    "DataProtection": true
+    "DataProtection": true,
+    "Ingestion": true
 }

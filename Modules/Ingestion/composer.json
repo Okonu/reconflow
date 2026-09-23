@@ -1,0 +1,22 @@
+{
+    "name": "reconflow/ingestion",
+    "description": "ReconFlow Ingestion module",
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Ingestion\\": "app/",
+            "Modules\\Ingestion\\Database\\Factories\\": "database/factories/",
+            "Modules\\Ingestion\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Ingestion\\Tests\\": "tests/"
+        }
+    }
+}

@@ -50,6 +50,11 @@
         <env name="DEMO_PASSWORD" value="Demo-Password-2026" force="true"/>
         <env name="SEED_DEMO_USERS" value="true" force="true"/>
         <env name="LOGIN_MAX_ATTEMPTS" value="5" force="true"/>
+        <env name="SOURCE_SYSTEMS_DRIVER" value="local" force="true"/>
+        <env name="SOURCE_SYSTEMS_TOKEN" value="test-source-token" force="true"/>
+        <env name="SOURCE_SYSTEMS_URL" value="http://sources.test" force="true"/>
+        <env name="DEMO_AUTO_SEED" value="false" force="true"/>
+        <env name="RECONFLOW_DISPLAY_TIMEZONE" value="Africa/Nairobi" force="true"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
