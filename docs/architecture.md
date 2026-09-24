@@ -1,6 +1,6 @@
 # Architecture
 
-ReconFlow is a single Laravel 13 application made of function-specific modules (nwidart/laravel-modules). A small shared kernel lives in the root `app/`. It uses PostgreSQL 16 for all state and a queue worker plus scheduler for background work. The UI is Inertia + React, served from the same app, so there is no separate SPA or API gateway.
+ReconFlow is one Laravel 13 application. The application has one module for each business function (`nwidart/laravel-modules`). A small shared kernel is in the root `app/` folder. PostgreSQL 16 keeps all the data. A queue worker and a scheduler do the background work. The same application serves the user interface (Inertia and React). There is no separate single-page application and no API gateway.
 
 ## Components
 
@@ -33,24 +33,29 @@ flowchart LR
     AI --> Claude["Anthropic API<br/>(redacted input only)"]
     Notifications --> Slack["Slack / email<br/>(aggregates only)"]
     UI <--> App
-    Caddy[Caddy: HTTPS] --> App
+    Caddy[Caddy reverse proxy] --> App
 ```
 
-| Module | Owns |
+| Module | Responsibility |
 |---|---|
-| Users | accounts, login/logout, Argon2id hashing, login throttling, deactivation |
-| Rbac | permission catalogue sync, roles composed of permissions, role assignment |
-| Audit | append-only, hash-chained `audit_events`, verifier, gzipped JSONL archive with checkpoint |
-| DataProtection | field inventory and classification, masking, pseudonymisation, PII-safe log processor, audited unmask |
-| Ingestion | source connectors, mock source store, synthetic data generator, uploads (staging → preview → confirm), DQ validation and quarantine, immutable batch versions, mock ERP |
-| Reconciliation | pure matching engine (R1–R7), run lifecycle and versioning, item state ledger, fuzzy review, manual matches, report and exports, rule settings |
-| ExceptionManagement | exceptions keyed across re-runs, severity/SLA, assignment, state machine, comments/timeline, sign-off and date lock |
-| Adjustments | correcting journals, maker-checker approvals, threshold, idempotent ERP posting and retry |
-| AI | Claude client, redaction, versioned prompts, triage and run narratives, human accept/override, kill switch, oversight, eval set |
-| Notifications | in-app bell, optional Slack/email, run alerts, critical-exception alerts, daily summary |
-| Dashboard | KPIs, trends, category and ageing charts |
+| Users | Accounts, login and logout, Argon2id password hashes, login limits, deactivation |
+| Rbac | The permission catalogue, roles made of permissions, role assignment |
+| Audit | The append-only audit table with a hash chain, the verifier, and the archive with a checkpoint |
+| DataProtection | The field inventory and classification, masking, pseudonym tokens, a log filter for personal data, and audited unmasking |
+| Ingestion | Source connectors, the mock source data, the synthetic data generator, uploads (staging, preview, confirm), data checks and quarantine, batch versions, and the mock ERP |
+| Reconciliation | The matching engine (rules R1 to R7), runs and run versions, item states, fuzzy review, manual matches, the report and exports, and rule settings |
+| ExceptionManagement | Exceptions that continue across new runs, severity and due dates, assignment, the state machine, comments, sign-off and the date lock |
+| Adjustments | Correcting journals, maker-checker approval, the value threshold, ERP posting with an idempotency key, and retry |
+| AI | The Claude client, redaction, prompts with versions, triage and daily summaries, human accept or override, the kill switch, oversight and the evaluation set |
+| Notifications | The in-app bell, optional Slack and email, run alerts, critical-exception alerts and the daily summary |
+| Dashboard | Key figures, trends, and charts for categories and age |
 
-Modules talk to each other through events (`RunFinished`, `ExceptionsSynced`, `ItemStateChanged`, `FuzzyMatchRejected`, `DemoDataSeeded`) and through contracts in `app/Contracts`: `BusinessDateLock`, `ExceptionDetailContributor`, `SettingsSection`, `ResetsDemoData`, `PermissionEnum`, `AuditActor`. For example, the exception detail page is assembled from panels that Adjustments and AI contribute, without ExceptionManagement knowing about either.
+The modules communicate through events and contracts. They do not call the controllers of other modules.
+
+- **Events:** `RunFinished`, `ExceptionsSynced`, `ItemStateChanged`, `FuzzyMatchRejected`, `DemoDataSeeded`.
+- **Contracts** (in `app/Contracts`): `BusinessDateLock`, `ExceptionDetailContributor`, `SettingsSection`, `ResetsDemoData`, `PermissionEnum`, `AuditActor`.
+
+For example, the Adjustments and AI modules add panels to the exception page. The ExceptionManagement module does not know about these modules.
 
 ## Daily data flow
 
@@ -67,31 +72,31 @@ sequenceDiagram
     participant ERP as Mock ERP
 
     S->>I: pull sales, payments, postings for D
-    I->>I: validate (DQ), quarantine bad rows, store immutable batch version (only if checksum changed)
-    S->>R: reconcile D (advisory lock per date)
-    R->>R: load active batches + carried items, run engine R5 → manual → R1 → R2 → R3 → R4/R6 → R7
-    R->>R: write run version, results, item states; supersede previous version
+    I->>I: check data, quarantine bad rows, keep a new batch version only if the data changed
+    S->>R: reconcile D (one lock for each date)
+    R->>R: load active batches and carried items, apply R5, manual matches, R1, R2, R3, R4/R6, R7
+    R->>R: write the run version, results and item states; replace the previous version
     R-->>E: RunFinished
-    E->>E: open / relink / reclassify / close exceptions by stable key
+    E->>E: open, relink, reclassify or close exceptions by their stable key
     E-->>N: ExceptionsSynced (critical alerts)
-    H->>E: review, comment, ask AI for a suggestion (optional)
-    H->>A: propose adjustment (maker)
-    H->>A: approve (checker ≠ maker, threshold)
-    A->>ERP: POST journal with idempotency key
-    ERP-->>A: journal id (or failure → POSTING_FAILED, retry)
+    H->>E: examine, comment, ask the AI for a suggestion (optional)
+    H->>A: propose an adjustment (maker)
+    H->>A: approve (checker is not the maker; threshold)
+    A->>ERP: POST journal with an idempotency key
+    ERP-->>A: journal ID (or failure: POSTING_FAILED, retry)
     A-->>E: exception resolved
-    H->>E: sign off D → date locked
+    H->>E: sign off D; the date is locked
 ```
 
-## Key design decisions
+## Design decisions
 
-- **Deterministic engine, integer cents.** The engine works on integer cents and Unix seconds with no I/O. Money is `brick/math` BigDecimal at the edges, and floats are rejected by `MoneyCast`. The same inputs always give the same outputs. Both answer keys (65 golden items and 2,531 volume items) reproduce exactly.
-- **Separate ingestion from reconciliation.** Batches are immutable snapshots with one active version per source and date. A run records the exact batch versions it used, so any historical result can be explained.
-- **Runs are versioned, never overwritten.** A re-run supersedes the previous version. Exceptions survive re-runs through a stable key (identity + status family), so comments, owners and adjustments stay attached.
-- **Permissions first.** Code defines permissions (per-module enums). Roles are data composed of permissions, and every action is authorised by a policy that checks permissions, never role names.
-- **Maker-checker in the policy layer.** Segregation of duties and the high-value threshold are enforced in `AdjustmentPolicy`, so the UI, API and jobs all go through the same rule.
-- **Idempotent side effects.** Each adjustment carries one idempotency key for life. The ERP replays the original journal for a repeated key, and retries reuse the key.
-- **Tamper-evident audit.** Each event stores `sha256(prev_hash + canonical JSON)`. A trigger blocks UPDATE and DELETE (except the checkpointed archiver), and `Verify integrity` recomputes the chain.
-- **AI as an advisor only.** The AI module can write only to `ai_suggestions`. It sees pseudonymised records, stores the redacted input and its hash, and every suggestion needs a human accept or override (with a reason).
-- **Versioned settings.** Rule, severity, approval and AI settings are versioned with the author and reason, and audited.
-- **Operational visibility.** A request ID is attached to every log line and error envelope. `/health`, `/ready` and Prometheus `/metrics` report runs, exceptions and queue state. Logs are scrubbed of phone numbers and secrets.
+- **Deterministic engine with integer cents.** The engine uses integer cents and Unix seconds. It does no input or output. Money is a `brick/math` BigDecimal at the edges. `MoneyCast` rejects floating-point numbers. The same input always gives the same output. The engine reproduces both answer keys exactly (65 golden items and 2,531 volume items).
+- **Ingestion is separate from reconciliation.** A batch is a copy of the data that does not change. There is one active batch for each source and date. Each run records the batch versions that it used. Thus we can explain each result from the past.
+- **Runs have versions.** A new run replaces the previous version but does not delete it. Each exception has a stable key (identity and status family). Thus comments, owners and adjustments stay with the exception after a new run.
+- **Permissions first.** The code defines the permissions. Roles are data made of permissions. A policy checks a permission for each action. No code checks a role name.
+- **Maker-checker in the policy.** `AdjustmentPolicy` enforces the segregation of duties and the value threshold. The pages, the HTTP routes and the jobs all use the same policy.
+- **Posting one time only.** Each adjustment keeps one idempotency key. If the ERP gets the same key again, it returns the first journal. A retry uses the same key.
+- **Audit trail that shows changes.** Each event keeps `sha256(prev_hash + canonical JSON)`. A database trigger stops updates and deletes, except by the archiver. "Verify integrity" calculates the chain again.
+- **The AI is an advisor only.** The AI module can write only to `ai_suggestions`. It gets records with pseudonym tokens. It keeps the redacted input and its hash. A person must accept or override each suggestion. An override needs a reason.
+- **Settings have versions.** Each change to the rule, severity, approval or AI settings has a version, an author and a reason. The audit trail records it.
+- **Operation data.** Each log line and each error has a request ID. `/health`, `/ready` and the Prometheus endpoint `/metrics` give the status of runs, exceptions and the queue. The logs contain no phone numbers and no secrets.

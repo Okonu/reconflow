@@ -1,59 +1,71 @@
 # ReconFlow
 
-Daily sales reconciliation for Tupande. ReconFlow pulls sales, payments and ERP postings each morning and matches them with deterministic rules. It turns every discrepancy into an owned exception with an SLA, and routes corrections through maker-checker approval before posting them to the ERP with an idempotency key. Everything is recorded in a hash-chained audit trail. An optional AI assistant suggests causes and next steps; people decide.
+ReconFlow is the daily sales reconciliation automation for Tupande. Each morning, it pulls the sales, payments and ERP postings. It matches them with deterministic rules. Each difference becomes an exception with an owner and a due date. A different person must approve each correction before it goes to the ERP. Each correction has an idempotency key. The system records all actions in an audit trail with a hash chain. An optional AI assistant suggests causes and next steps. People make the decisions.
 
-> **Synthetic data only.** This system is a demonstration. No real customer data is used.
+> **Synthetic data only.** This system is a demonstration. It contains no real customer data.
 
-![Screenshot placeholder](docs/screenshot.png)
+![The ReconFlow dashboard with synthetic demo data](docs/screenshot.png)
+
+**Live demo:** http://212.56.45.149:8090 (the demo logins are below).
 
 ## Stack
 
-Laravel 13 (PHP 8.3) with function-specific modules, PostgreSQL 16, Inertia + React 19 + TypeScript + Tailwind + shadcn/ui, FrankenPHP behind Caddy, Docker Compose. The AI assistant uses the official Anthropic PHP SDK (Claude).
+Laravel 13 (PHP 8.3) with one module for each business function, PostgreSQL 16, and Inertia with React 19, TypeScript, Tailwind and shadcn/ui. FrankenPHP runs behind Caddy, in Docker Compose. The AI assistant uses the official Anthropic PHP SDK (Claude). [Technology choices](docs/technology-choices.md) gives the reasons.
 
-## Run it (Docker, no configuration)
+## Run it with Docker (no configuration)
 
-You only need **Docker** (Docker Desktop on macOS/Windows, or Docker Engine with the Compose plugin on Linux). Nothing else is required: no PHP, Node, database setup or `.env` file.
+You need only **Docker**: Docker Desktop on macOS or Windows, or Docker Engine with the Compose plugin on Linux. You do not need PHP, Node, a database or an `.env` file.
 
-```bash
-git clone https://github.com/Okonu/reconflow.git
-cd reconflow
-docker compose up -d --build
-```
+1. Get the code and start the system:
 
-Then open **http://localhost:8080** and sign in with any account below. The password is **`ReconFlow2026`**.
+   ```bash
+   git clone https://github.com/Okonu/reconflow.git
+   cd reconflow
+   docker compose up -d --build
+   ```
 
-What happens on the first start:
+2. Open **http://localhost:8080**.
+3. Sign in with an account from the table below. The password is **`ReconFlow2026`**.
 
-1. The image builds, which takes 3–6 minutes the first time and is cached afterwards.
-2. PostgreSQL starts. The app generates its own secrets (application key, pseudonymisation salt, source-system token) into a Docker volume, runs the migrations, and creates the roles and demo users.
-3. The page is usable as soon as `docker compose ps` shows `app` as **healthy**. A background worker then generates 14 days of synthetic data (3,000 sales a day) and reconciles every day. The dashboard shows "Preparing demo data…" and refreshes itself; this takes a few minutes.
+On the first start, these steps occur:
+
+1. Docker builds the image. The first build takes 3 to 6 minutes. Later builds use the cache.
+2. PostgreSQL starts. The application makes its secrets (application key, pseudonym salt, source-system token) in a Docker volume. It runs the migrations and makes the roles and demo users.
+3. When `docker compose ps` shows `app` as **healthy**, you can use the pages. A background worker then makes 14 days of synthetic data (3,000 sales each day) and reconciles each day. The dashboard shows "Preparing demo data…" and refreshes automatically. This takes some minutes.
 
 Useful commands:
 
-| Command | What it does |
+| Command | Result |
 |---|---|
-| `docker compose ps` | Service status (`app` should be healthy) |
-| `docker compose logs -f app worker` | Follow the logs |
-| `docker compose down` | Stop (data is kept in Docker volumes) |
-| `docker compose down -v` | Stop and delete all data; the next `up` starts fresh |
+| `docker compose ps` | Shows the status of the services. `app` must be healthy |
+| `docker compose logs -f app worker` | Shows the logs |
+| `docker compose down` | Stops the system. The data stays in the Docker volumes |
+| `docker compose down -v` | Stops the system and deletes all data. The next `up` starts with new data |
 
-Docker Compose also reads a `.env` file in the project root if one exists (for example, from local development). Use `make up`, which ignores it, if you have one.
+Docker Compose also reads a `.env` file in the project root, if one exists (for example, from local development). If you have one, use `make up`. `make up` does not read it.
 
-Optional settings: copy `deploy/.env.example` to `deploy/.env`, change what you need, and run `docker compose --env-file deploy/.env up -d` (or `make up`). Common changes:
+**Optional settings:** copy `deploy/.env.example` to `deploy/.env` and change the values. Then run `docker compose --env-file deploy/.env up -d` (or `make up`). The usual changes are:
 
 | Setting | Default | When to change it |
 |---|---|---|
-| `HTTP_PORT` | `8080` | Port 8080 is already in use on your machine |
-| `APP_URL` | `http://localhost:8080` | Serving on another host or port (used in notification links) |
-| `ANTHROPIC_API_KEY` | empty | To use Claude for AI suggestions. Without a key, the AI panels use a clearly labelled offline rules stub, so every screen still works |
-| `DEMO_PASSWORD` | `ReconFlow2026` | Any shared or public deployment |
-| `SITE_ADDRESS`, `SESSION_SECURE_COOKIE` | `:80`, `false` | Real domain with HTTPS: set `SITE_ADDRESS=your.domain` and `SESSION_SECURE_COOKIE=true`; Caddy obtains the certificate |
+| `HTTP_PORT` | `8080` | Another program uses port 8080 on your computer |
+| `APP_URL` | `http://localhost:8080` | You use a different host or port (notification links use this value) |
+| `ANTHROPIC_API_KEY` | empty | You want Claude for the AI suggestions. Without a key, the AI panels use a labelled offline rules stub. All pages still operate |
+| `DEMO_PASSWORD` | `ReconFlow2026` | For each shared or public deployment |
+| `SITE_ADDRESS`, `SESSION_SECURE_COOKIE` | `:80`, `false` | For a real domain with HTTPS, set `SITE_ADDRESS=your.domain` and `SESSION_SECURE_COOKIE=true`. Caddy gets the certificate |
 
-The stack runs five containers: `app` (web), `worker` (queue: reconciliation, postings, AI, notifications), `scheduler` (daily 06:00 run, summaries, retention), `db` (PostgreSQL 16, internal network only), and `caddy` (reverse proxy on port 8080). See [docs/deployment.md](docs/deployment.md) for servers, HTTPS, backups and upgrades.
+The system runs five containers:
+
+- `app`: the web process.
+- `worker`: the queue (reconciliation, postings, AI, notifications).
+- `scheduler`: the 06:00 run, summaries and retention.
+- `db`: PostgreSQL 16, on the internal network only.
+- `caddy`: the reverse proxy on port 8080.
+ [Deployment](docs/deployment.md) gives the procedures for servers, HTTPS, backups and upgrades.
 
 ## Local development (without Docker)
 
-Requires PHP 8.3, Composer, Node 22 and PostgreSQL 16.
+You need PHP 8.3, Composer, Node 22 and PostgreSQL 16.
 
 ```bash
 cp .env.example .env && php artisan key:generate   # then set the DB_* values
@@ -66,55 +78,67 @@ make dev                                 # php artisan serve + queue worker + vi
 
 Password: `ReconFlow2026` (the value of `DEMO_PASSWORD`).
 
-| Login | Seeded role | Can |
+| Login | Role | Permissions |
 |---|---|---|
-| `analyst@demo` | Recon Analyst | run reconciliations, upload data, work exceptions, propose adjustments, use AI |
-| `manager@demo` | Finance Manager | everything an analyst can, plus approve (including above $1,000), sign off and reopen dates, unmasked exports |
-| `auditor@demo` | Auditor | read-only; personal data masked; verify and export the audit log |
-| `admin@demo` | Administrator | users, roles, settings, AI kill switch, demo reset |
+| `analyst@demo` | Recon Analyst | Run reconciliations, upload data, work on exceptions, propose adjustments, use the AI |
+| `manager@demo` | Finance Manager | All analyst permissions. Also approve (including more than $1,000), sign off and reopen dates, and export unmasked data |
+| `auditor@demo` | Auditor | Read only. Personal data is masked. Check and export the audit log |
+| `admin@demo` | Administrator | Users, roles, settings, the AI kill switch and the demo reset |
 
-Roles are templates made of permissions. Permissions can be changed and new roles created at runtime on the Roles page.
+Roles are made of permissions. An administrator can change the permissions of a role, or make new roles, on the Roles page.
 
 ## Five-minute demo
 
-1. **Analyst**: the dashboard shows 14 days of history: match rate ~96%, value at variance, open exceptions, and about 2h 45m saved today.
-2. **Runs → Run now** for the latest closed date. It completes in seconds; open the run to see the DQ report with quarantined rows.
-3. **Report**: filter to *Variance*, then **Export XLSX** (phones masked).
-4. **Exceptions**: open an under-payment. See the sale, payment and posting side by side, the rule that fired, and the AI suggestion. Accept it and propose a write-off.
-5. On **Approvals**, the approve button is disabled with "someone else must approve (segregation of duties)".
-6. **Manager**: approve from the inbox. The adjustment is posted to the ERP as `ADJ-…` with its idempotency key.
-7. A **timing** exception from the previous day shows *Resolved… by payment…* after the next run.
-8. **Auditor**: phones are masked. **Audit log**: filter entity type `adjustment`, then **Verify integrity** (passes).
-9. **Data uploads**: download the payments template, upload `samples/golden/payments_2026-09-22.xlsx`, see the preview flag 2 invalid rows with reasons, confirm, and run 2026-09-22. Counts match the answer key.
-10. **Admin → AI oversight**: acceptance and override rates. Flip the kill switch; exceptions are still categorised by the rules.
-11. **Manager → Sign-off**: clear the blockers, acknowledge carried exceptions, and sign off. The date is locked.
+1. Sign in as **analyst@demo**. The dashboard shows 14 days of history. It shows a match rate of approximately 96%, the value at variance, the open exceptions and the time saved today.
+2. Select **Runs → Run now** for the latest closed date. The run completes in seconds. Open the run to see the data-quality report and the rows in quarantine.
+3. Open **Report**. Filter to *Variance*. Select **Export XLSX**. The phone numbers are masked.
+4. Open **Exceptions** and select an under-payment. The page shows the sale, the payment, the posting, the rule and the AI suggestion. Accept the suggestion and propose a write-off.
+5. Open **Approvals**. The approve button is disabled with the text "someone else must approve (segregation of duties)".
+6. Sign in as **manager@demo**. Approve the adjustment. The ERP gets the journal `ADJ-…` with its idempotency key.
+7. After the next run, a **timing** exception from the previous day shows *Resolved… by payment…*.
+8. Sign in as **auditor@demo**. The phone numbers are masked. Open **Audit log**, filter the entity type `adjustment` and select **Verify integrity**. The check passes.
+9. Open **Data uploads**. Download the payments template. Upload `samples/golden/payments_2026-09-22.xlsx`. The preview shows 2 invalid rows with the reasons. Confirm the upload and run 2026-09-22. The counts agree with the answer key.
+10. Sign in as **admin@demo** and open **AI oversight**. The page shows the acceptance and override rates. Turn on the kill switch. The rules still categorise the exceptions.
+11. Sign in as **manager@demo** and open **Sign-off**. Clear the blockers, give a comment for the carried exceptions and sign off. The date is locked.
 
 ## Quality
 
 ```bash
-make test      # Pest (unit, feature, architecture) + TypeScript check (needs the local dev setup)
-make lint      # Pint + Larastan + ESLint
-php artisan reconflow:ai-eval --stub       # AI eval baseline (use without --stub when a key is set)
+make test      # Pest (unit, feature, architecture) and the TypeScript check (needs the local setup)
+make lint      # Pint, Larastan and ESLint
+php artisan reconflow:ai-eval --stub       # AI evaluation baseline (without --stub when a key is set)
 ```
 
-The golden (65 items) and volume (2,531 items) answer keys in `samples/` are reproduced exactly. A performance test reconciles 50,000 sales in under 60 seconds.
+The engine reproduces the golden answer key (65 items) and the volume answer key (2,531 items) in `samples/` exactly. A performance test reconciles 50,000 sales in less than 10 seconds. 376 tests pass. Refer to the [Test report](docs/test-report.md).
 
 ## Documentation
 
-| Doc | What's in it |
+The documents are in ASD-STE100 Simplified Technical English. [docs/README.md](docs/README.md) gives the full list and a glossary.
+
+| Document | Contents |
 |---|---|
-| [Architecture](docs/architecture.md) | Components, data flow, design decisions |
-| [Reconciliation rules](docs/reconciliation-rules.md) | Every rule in plain English, with examples |
-| [Data model](docs/data-model.md) | ER diagram and table purposes |
-| [Controls matrix](docs/controls-matrix.md) | Risk → control → enforcement → evidence |
-| [AI governance](docs/ai-governance.md) | Use register, model card, risk assessment, oversight, go-live gates |
-| [Data protection](docs/data-protection.md) | Inventory, what leaves the system, masking, retention, DPIA-lite |
+| [Process map](docs/process-map.md) | The manual process today and the automated process |
+| [Business case](docs/business-case.md) | Value, costs, rollout plan and measures of success |
+| [Decision log](docs/decision-log.md) | Decisions, options, reasons and the use of AI tools |
+| [Technology choices](docs/technology-choices.md) | The reason for each technology |
+| [Architecture](docs/architecture.md) | Components, data flow and design decisions |
+| [Reconciliation rules](docs/reconciliation-rules.md) | Each rule in plain language, with examples |
+| [Assumptions](docs/assumptions.md) | Business assumptions and scope limits |
+| [Data model](docs/data-model.md) | The entity diagram and the tables |
+| [Controls matrix](docs/controls-matrix.md) | Risk, control, enforcement and evidence |
+| [Risk register](docs/risk-register.md) | Delivery and operation risks |
+| [AI governance](docs/ai-governance.md) | Use register, model card, risk assessment, oversight and go-live gates |
+| [Data protection](docs/data-protection.md) | Inventory, data that goes out, masking, retention and DPIA |
 | [Runbook](docs/runbook.md) | Daily operation and incident procedures |
-| [Deployment](docs/deployment.md) | Prerequisites, env vars, HTTPS, backups, upgrade and rollback |
-| [API](docs/api.md) | Routes, JSON endpoints, mock source and ERP APIs |
-| [Assumptions](docs/assumptions.md) | Business assumptions and scope notes |
-| [Build notes](BUILD_NOTES.md) | Decision log, open questions with chosen defaults, limitations |
+| [Deployment](docs/deployment.md) | Requirements, settings, HTTPS, backups, upgrade and rollback |
+| [Routes and APIs](docs/api.md) | Routes, JSON endpoints, and the mock source and ERP APIs |
+| [Build notes](BUILD_NOTES.md) | The engineering log from the build (not in STE) |
 
-## Out of scope (production next steps)
+## Out of scope (steps for production)
 
-Real source integrations, SSO/Azure AD, multi-currency/FX, multi-entity, high availability, formal retention policy sign-off, and penetration testing.
+- Real source integrations.
+- SSO (for example Azure AD).
+- Multiple currencies and multiple legal entities.
+- High availability.
+- The formal approval of the retention policy.
+- A penetration test.

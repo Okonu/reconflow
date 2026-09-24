@@ -1,12 +1,14 @@
 # Routes and APIs
 
-The UI is server-rendered through Inertia: page routes return an Inertia response for the browser and JSON for `X-Inertia` requests. Form posts redirect back with a flash message. A few endpoints return JSON or files and are called with `fetch` from the pages. Every route except the system and mock APIs needs a signed-in session, and every action is authorised by a policy on the permission shown.
+This document lists the pages, actions and endpoints of ReconFlow.
+
+The server makes the pages through Inertia. A page route returns an Inertia response to the browser, and JSON to an `X-Inertia` request. A form post goes back to the page with a message. Some endpoints return JSON or files. The pages call them through the shared HTTP client. All routes, except the system and mock APIs, need a signed-in session. A policy checks the permission in the table for each action.
 
 **Conventions**
-- CSRF: session cookie plus the `X-XSRF-TOKEN` header (handled by Inertia and `resources/js/lib/http.ts`).
-- Errors (JSON): `{"error": {"code": "forbidden|not_found|conflict|validation_failed|…", "message": "…", "request_id": "…"}}`. Validation errors use Laravel's `{"message", "errors": {field: [..]}}`.
-- Every response carries `X-Request-ID` (send your own to correlate).
-- Rate limits: login is throttled; exports 20/min (report) and 10/min (audit, unmasked); AI triage 20/min, summaries 10/min, batch triage 5/min; unmask 30/min.
+- CSRF: a session cookie and the `X-XSRF-TOKEN` header. Inertia and `resources/js/lib/http.ts` send them.
+- Errors (JSON): `{"error": {"code": "forbidden|not_found|conflict|validation_failed|…", "message": "…", "request_id": "…"}}`. Validation errors use the Laravel format `{"message", "errors": {field: [..]}}`.
+- Each response has an `X-Request-ID` header. You can send your own ID to connect your request to the logs.
+- Rate limits: login attempts are limited. Report exports: 20 each minute. Audit and unmasked exports: 10 each minute. AI triage: 20 each minute. Summaries: 10 each minute. Batch triage: 5 each minute. Unmask: 30 each minute.
 
 ## Pages (Inertia)
 
@@ -80,12 +82,12 @@ The UI is server-rendered through Inertia: page routes return an Inertia respons
 | Path | Purpose |
 |---|---|
 | `GET /health` | Liveness: `{"status":"ok"}` |
-| `GET /ready` | Readiness: database reachable (`503` otherwise) |
-| `GET /metrics` | Prometheus metrics (runs, match rate, exceptions by severity/state, ingestion). Blocked by Caddy; scrape from the internal network |
+| `GET /ready` | Readiness: the database is available (otherwise `503`) |
+| `GET /metrics` | Prometheus figures (runs, match rate, exceptions for each severity and state, ingestion). Caddy blocks this path. Read it from the internal network |
 
 ## Mock source systems
 
-The stand-ins for the real sales, payments and ERP systems require `Authorization: Bearer $SOURCE_SYSTEMS_TOKEN`.
+These APIs simulate the real sales, payment and ERP systems. They need the header `Authorization: Bearer $SOURCE_SYSTEMS_TOKEN`.
 
 ### `GET /api/mock/{sales|payments|postings}?date=YYYY-MM-DD`
 
@@ -99,7 +101,7 @@ The stand-ins for the real sales, payments and ERP systems require `Authorizatio
 }
 ```
 
-Rows use the upload template columns. `window` applies to payments only (D 00:00 to D+1 06:00, end-exclusive).
+The rows have the same columns as the upload templates. `window` applies only to payments (D 00:00 to D+1 06:00, the end is not included).
 
 ### `POST /api/mock/erp/journals`
 
@@ -116,8 +118,8 @@ Rows use the upload template columns. `window` applies to payments only (D 00:00
 }
 ```
 
-- Lines must balance (Σ debit = Σ credit). `reverse_journal_id` reverses an existing journal (used for correct-posting and duplicate-posting fixes).
+- The lines must balance (Σ debit = Σ credit). `reverse_journal_id` reverses an existing journal. The correct-posting and duplicate-posting corrections use it.
 - Response `200`: `{"journal_id": "ADJ-2026-000001", "status": "POSTED", "posting_date", "reversal_of", "posted_at", "simulated": true, "replayed": false}`.
-- A repeated `idempotency_key` returns the original response with `"replayed": true` and posts nothing.
-- `422 invalid_journal` for unbalanced lines or an unknown journal to reverse; `503 erp_unavailable` while the failure simulation is on.
-- Posted revenue lines are appended to the mock postings source, so the next pull and re-run see the correction.
+- If the `idempotency_key` occurs again, the ERP returns the first response with `"replayed": true`. It posts nothing.
+- `422 invalid_journal`: the lines do not balance, or the journal to reverse does not exist. `503 erp_unavailable`: the failure simulation is on.
+- The ERP adds posted revenue lines to the mock postings source. Thus the next pull and run see the correction.

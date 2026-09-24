@@ -1,8 +1,10 @@
 # Data protection
 
+This document shows how ReconFlow protects personal data, as the Kenya Data Protection Act 2019 requires.
+
 ## 1. Data inventory and classification
 
-The source of truth is `Modules/DataProtection/app/Support/FieldInventory.php`, which the masking, logging and export code use.
+The source of truth is `Modules/DataProtection/app/Support/FieldInventory.php`. The masking, logging and export code use this file.
 
 | Dataset | Field | Classification |
 |---|---|---|
@@ -21,66 +23,66 @@ The source of truth is `Modules/DataProtection/app/Support/FieldInventory.php`, 
 
 All data in the demo is synthetic.
 
-## 2. What leaves the system
+## 2. Data that goes out of the system
 
 ```mermaid
 flowchart LR
     subgraph ReconFlow
         DB[(PostgreSQL<br/>full records)]
-        Red[Redactor<br/>phones/agents → salted tokens<br/>+ PII scrub]
-        Agg[Aggregates only<br/>counts, totals, dates]
+        Red[Redactor<br/>phones and agents become salted tokens<br/>and personal data is removed]
+        Agg[Totals only<br/>counts, totals, dates]
         Exp[Exports<br/>masked by default]
     end
-    DB --> Red --> AI[Anthropic API<br/>triage: one exception, pseudonymised]
-    DB --> Agg --> AI2[Anthropic API<br/>daily narrative]
+    DB --> Red --> AI[Anthropic API<br/>triage: one exception, with tokens]
+    DB --> Agg --> AI2[Anthropic API<br/>daily summary]
     DB --> Agg --> Slack[Slack / email<br/>alerts and daily summary]
     DB --> ERP[ERP<br/>correcting journals: accounts, amounts, transaction IDs]
-    DB --> Exp --> User[Authorised user download]
-    DB -. never .-> Logs[Application logs<br/>phones/secrets scrubbed]
+    DB --> Exp --> User[Download by an authorised user]
+    DB -. never .-> Logs[Application logs<br/>phones and secrets removed]
 ```
 
 | Destination | Content | Personal data? |
 |---|---|---|
-| Anthropic (triage) | One exception's amounts, timestamps, statuses, rule, channel, region, SKU, references, ERP lines; customer/payer/agent as tokens like `CUST_3f9a…` | No direct identifiers; pseudonymous tokens only |
-| Anthropic (narrative) | Match rate, counts by status, totals, open exceptions by severity and category | No |
-| Slack / email | Alert titles, counts, amounts, dates, links | No |
+| Anthropic (triage) | The amounts, times, statuses, rule, channel, region, SKU, references and ERP lines of one exception. Tokens such as `CUST_3f9a…` replace the customer, payer and agent | No direct identifiers. Pseudonym tokens only |
+| Anthropic (summary) | Match rate, counts for each status, totals, open exceptions for each severity and category | No |
+| Slack and email | Alert titles, counts, amounts, dates and links | No |
 | ERP | Journal lines (accounts, amounts, transaction IDs, reference text) | No |
-| Exports | Report rows; phones masked unless an authorised user gives a reason | Only in audited unmasked exports |
-| Logs | Request metadata; a processor scrubs phone numbers, bearer tokens, JWTs and API keys from every channel | No |
+| Exports | Report rows. Phone numbers are masked, except when an authorised user gives a reason | Only in audited unmasked exports |
+| Logs | Request data. A filter removes phone numbers, bearer tokens, JWTs and API keys from each log channel | No |
 
 ## 3. Masking rules
 
-- Phones are shown as `07•• ••• 123` in every page, API response and default export (`PersonalData::maskPhone`).
-- **Auditors** and anyone without `pii.unmask` see masked values only.
-- **Unmask** (Analyst, Finance Manager): "Show phone number" on an exception's source record requires a purpose and writes `pii.unmasked` to the audit log with the record and fields.
-- **Unmasked export** (Finance Manager, `results.export_unmasked`): requires a reason of at least 10 characters. It is audited as `report.exported` with `masked=false`, the reason, filters and row count, and the file name ends in `_UNMASKED`.
-- The AI provider receives salted tokens (`PII_HASH_SALT`), so the same customer maps to the same token without revealing the number.
+- Pages, API responses and default exports show phone numbers as `07•• ••• 123` (`PersonalData::maskPhone`).
+- **Auditors**, and all users without `pii.unmask`, see only masked values.
+- **Unmask** (Analyst, Finance Manager): "Show phone number" on the source record of an exception needs a purpose. The audit trail records `pii.unmasked` with the record and the fields.
+- **Unmasked export** (Finance Manager, `results.export_unmasked`): needs a reason of 10 or more characters. The audit trail records `report.exported` with `masked=false`, the reason, the filters and the row count. The file name ends with `_UNMASKED`.
+- The AI provider gets salted tokens (`PII_HASH_SALT`). The same customer always gets the same token. The token does not show the number.
 
 ## 4. Retention schedule
 
-| Data | Retention | Mechanism |
+| Data | Retention | How |
 |---|---|---|
-| Transaction records (sales, payments, postings, quarantine, mock source copies) | 7 years (`RETENTION_TRANSACTIONS_YEARS`), then personal fields anonymised | `reconflow:anonymise-expired`, daily 02:30; audit `retention.transactions_anonymised` |
+| Transaction records (sales, payments, postings, quarantine, mock source copies) | 7 years (`RETENTION_TRANSACTIONS_YEARS`). Then the system anonymises the personal fields | `reconflow:anonymise-expired`, each day at 02:30. Audit event `retention.transactions_anonymised` |
 | Upload staging | 24 hours | `PurgeStagedUploadsCommand` |
-| AI suggestion logs and eval runs | 12 months (`RETENTION_AI_LOGS_MONTHS`) | `reconflow:ai-prune`, daily; audit `ai.logs_pruned` |
-| Audit log | 7 years, then archived to gzipped JSONL on a local volume behind a checkpoint | `audit:archive` (scheduled); the chain stays verifiable from the checkpoint |
-| Notifications | Kept with the user account | |
-| Reconciliation results and exceptions | Same as transactions; they hold no phone numbers, only record IDs | |
+| AI suggestion logs and evaluation runs | 12 months (`RETENTION_AI_LOGS_MONTHS`) | `reconflow:ai-prune`, each day. Audit event `ai.logs_pruned` |
+| Audit log | 7 years. Then an archive of gzipped JSONL files on a local volume, with a checkpoint | `audit:archive` (scheduled). You can still check the chain from the checkpoint |
+| Notifications | While the user account exists | |
+| Reconciliation results and exceptions | The same as transactions. They contain record IDs, not phone numbers | |
 
-**Erasure requests** always anonymise and never delete, so the accounting records stay complete: `POST /privacy/erasures` (`privacy.erase`, Administrator) with the phone number, a reason and the request reference. Every stored copy of that number is replaced with `ANONYMISED`, including JSON copies in quarantine and mock source rows. Matching staged uploads are cleared. The audit entry stores only a pseudonym token of the subject, the reference and the counts. Audit payloads never contain phone numbers, so the immutable audit log needs no rewriting.
+**Erasure requests.** The system always anonymises and never deletes. Thus the accounting records stay complete. An administrator sends `POST /privacy/erasures` (`privacy.erase`) with the phone number, a reason and the request reference. The system replaces each stored copy of the number with `ANONYMISED`. This includes the JSON copies in quarantine and in mock source rows. The system also clears staged uploads that contain the number. The audit entry keeps only a pseudonym token, the reference and the counts. Audit data never contains phone numbers, so the audit log does not change.
 
-## 5. DPIA-lite summary
+## 5. Short data protection impact assessment (DPIA)
 
 | Item | Assessment |
 |---|---|
-| Processing | Daily reconciliation of sales, payments and ledger entries; exception investigation; optional AI assistance |
-| Lawful basis (to confirm with DPO) | Legitimate interest / legal obligation for financial record keeping |
-| Personal data | Customer and payer phone numbers; staff names and emails |
-| Necessity | Phones are needed for fuzzy matching (no-reference payments) and for contacting customers about discrepancies. Everything else is non-personal |
-| Minimisation | Masked by default; pseudonymised for AI; aggregates for notifications; no names of customers stored |
-| Access | Permission-based roles; unmasking and unmasked exports audited with purpose or reason |
-| Retention | Section 4; anonymisation rather than deletion keeps the ledger intact |
-| Transfers | The AI provider may process data outside Kenya. **Go-live gate:** DPO approval of provider terms and cross-border transfer (see ai-governance.md §7) |
-| Security | TLS (Caddy), Argon2id, CSP and security headers, secrets in env only, hash-chained audit, DB on an internal network |
-| Residual risk | Low to medium: re-identification from pseudonymous tokens needs the salt, which is held only in the app's secrets |
-| Actions before production | DPO sign-off; confirm the lawful basis; formal retention policy approval; provider DPA; penetration test |
+| Processing | Daily reconciliation of sales, payments and ledger entries. Investigation of exceptions. Optional AI help |
+| Lawful basis (the DPO must confirm) | Legitimate interest or legal obligation for financial records |
+| Personal data | Phone numbers of customers and payers. Names and email addresses of staff |
+| Necessity | Fuzzy matching (payments with no reference) needs phone numbers. Staff need them to speak to customers about differences. All other data is not personal |
+| Minimisation | Masked by default. Tokens for the AI. Totals for notifications. The system keeps no customer names |
+| Access | Roles made of permissions. The audit trail records each unmask and each unmasked export, with a purpose or a reason |
+| Retention | Refer to section 4. Anonymisation, not deletion, keeps the ledger complete |
+| Transfers | The AI provider can process data outside Kenya. **Go-live gate:** the DPO approves the provider terms and the transfer (refer to ai-governance.md §7) |
+| Security | TLS (Caddy), Argon2id, CSP and security headers, secrets only in the environment, the audit hash chain, and the database on an internal network |
+| Residual risk | Low to medium. To identify a person from a token, an attacker needs the salt. Only the secrets of the application contain the salt |
+| Actions before production | DPO approval. Confirm the lawful basis. Approve the retention policy. Sign a data processing agreement with the provider. Do a penetration test |

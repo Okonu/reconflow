@@ -1,97 +1,97 @@
 # AI governance
 
-ReconFlow uses a large language model (Anthropic Claude) as an **assistant** for exception triage and daily narrative summaries. It never takes action. This document is the AI use register entry, model card, risk assessment and oversight design.
+ReconFlow uses a large language model (Anthropic Claude) as an **assistant**. The assistant helps with the triage of exceptions and writes a daily summary. It never does an action. This document contains the AI use register entry, the model card, the risk assessment and the oversight design.
 
 ## 1. AI use register entry
 
 | Field | Entry |
 |---|---|
-| Use case | AI-assisted triage of reconciliation exceptions, plus a plain-language daily summary |
-| Purpose | Speed up analyst investigation by proposing a likely cause and next step with cited evidence; give managers a two-minute daily briefing |
-| Business owner | Finance Manager (the accountable AI owner role is recorded under Settings → AI assistant, with the date of the last AI review) |
+| Use case | Triage of reconciliation exceptions with AI help, and a daily summary in plain language |
+| Purpose | Make the investigation faster. The AI proposes a likely cause and a next step, with evidence. Managers get a short daily summary |
+| Business owner | Finance Manager. Record the name of the AI owner and the date of the last AI review in Settings → AI assistant |
 | System owner | ReconFlow administrator |
-| Users | Recon Analysts and Finance Managers (`ai.use`); oversight by Finance Manager, Auditor and Administrator (`ai.oversee`) |
-| Model / provider | Anthropic Claude via API; default `claude-opus-5` (configurable), adaptive thinking, JSON-schema structured output, server-side refusal fallback |
-| Data used | Triage: one exception's status, rule, amounts, timestamps, channel, region, product, references and ERP lines, with customers, payers and agents replaced by salted pseudonym tokens. Summary: aggregate counts and totals only |
-| Data not used | Phone numbers, names, emails, user identities, free-text comments |
-| Decision type | Advisory only. No state change, adjustment, posting or sign-off can be triggered by AI output |
-| Risk level | **Medium**: financial-process context with human review of every output; low personal-data exposure after redaction |
-| Controls | Redaction, human accept/override with a required override reason, kill switch, per-call logging, oversight metrics, eval set, versioned prompts, rate limits |
-| Review cadence | Quarterly AI review (record the date in Settings), plus a review whenever the prompt or model changes |
-| Go-live status | **Not approved for production** until the gates in section 7 are met |
+| Users | Recon Analysts and Finance Managers (`ai.use`). Finance Managers, Auditors and Administrators do the oversight (`ai.oversee`) |
+| Model and provider | Anthropic Claude through the API. The default model is `claude-opus-5` (a setting). Adaptive thinking, JSON-schema output, and a fallback on the server if the model declines |
+| Data that it uses | Triage: the status, rule, amounts, times, channel, region, product, references and ERP lines of one exception. Salted pseudonym tokens replace customers, payers and agents. Summary: counts and totals only |
+| Data that it does not use | Phone numbers, names, email addresses, user identities and comments |
+| Type of decision | Advice only. AI output cannot cause a state change, an adjustment, a posting or a sign-off |
+| Risk level | **Medium.** The context is a financial process, but a person examines each output. After redaction, there is little personal data |
+| Controls | Redaction. A person accepts or overrides each suggestion, and an override needs a reason. Kill switch. A log of each call. Oversight figures. An evaluation set. Prompts with versions. Rate limits |
+| Review | An AI review each quarter (record the date in Settings). Also a review at each change of prompt or model |
+| Go-live status | **Not approved for production.** The gates in section 7 must be complete first |
 
 ## 2. Model card
 
-**Intended use.** Given a reconciliation exception that the deterministic rules have already classified, suggest the most likely business cause from a fixed list (`LikelyCause`) and the single most useful next action from a fixed list (`RecommendedAction`). Explain in two or three sentences, cite evidence from the records, and state a confidence from 0 to 1.
+**Intended use.** The deterministic rules classify each exception first. The AI then suggests the most likely business cause from a fixed list (`LikelyCause`) and the most useful next action from a fixed list (`RecommendedAction`). It gives a reason in two or three sentences, gives evidence from the records, and gives a confidence from 0 to 1.
 
-**Inputs.** Built by `Modules/AI/app/Services/Redactor.php`; the exact redacted JSON is stored with each suggestion.
+**Input.** `Modules/AI/app/Services/Redactor.php` makes the input. The system keeps the exact redacted JSON with each suggestion.
 
-**Outputs.** JSON validated against `Modules/AI/app/Support/Schemas.php`, with enum values checked server-side. Invalid output is rejected and recorded as a failure.
+**Output.** The server validates the JSON against `Modules/AI/app/Support/Schemas.php` and checks the list values. The system rejects output that is not valid and records a failure.
 
-**Prompts.** `Modules/AI/resources/prompts/v1_triage.md` and `v1_run_summary.md`. The version and SHA-256 of the prompt are stored with every call. Changing a prompt is a code change that goes through review and CI.
+**Prompts.** `Modules/AI/resources/prompts/v1_triage.md` and `v1_run_summary.md`. The system keeps the prompt version and its SHA-256 hash with each call. A change to a prompt is a code change. It goes through review and CI.
 
-**Limitations and known failure modes.**
-- It can only see the records given to it. Context outside the system (a customer's phone call, a bank delay) is invisible.
-- It may over-trust references. A mistyped reference that looks like another sale can mislead it.
-- It can be confidently wrong on unusual patterns (for example split instalments across days). Confidence is the model's estimate, not a calibrated probability.
-- Pseudonym tokens hide whether two different phone numbers belong to the same person.
-- Amounts are strings; the model can misread arithmetic on many-payment items. The engine's variance figure is authoritative.
-- The provider can decline a request (refusal); a fallback model then answers, which is flagged `served_by_fallback`.
-- The provider can be down, slow or rate limited. The UI says "AI suggestion unavailable" and all functions continue rules-only.
+**Limits and known failures.**
+- The AI sees only the records that it gets. It does not know about events outside the system, for example a telephone call from a customer or a bank delay.
+- It can trust references too much. A reference with a typing error that looks like a different sale can cause an incorrect suggestion.
+- It can be incorrect with high confidence on unusual patterns, for example instalments across days. The confidence is an estimate of the model. It is not a calibrated probability.
+- Pseudonym tokens do not show if two phone numbers belong to the same person.
+- Amounts are text. The model can make arithmetic errors on items with many payments. The variance from the engine is the correct value.
+- The provider can decline a request. A fallback model then answers, and the system sets the flag `served_by_fallback`.
+- The provider can be unavailable, slow or at its rate limit. The page then shows "AI suggestion unavailable". All functions continue with the rules only.
 
-**Evaluation.** `Modules/AI/resources/evals/triage_v1.json` holds 20 labelled cases covering every exception type and edge cases (tolerance-level shortfalls, cash without reference, critical unidentified receipts, near-midnight timing, duplicates on two channels, duplicate postings across days). `php artisan reconflow:ai-eval` scores recommended-action and likely-cause accuracy and stores the run (visible on the oversight page). `--stub` gives a rules-only baseline. CI runs the eval when an `ANTHROPIC_API_KEY` secret is configured and skips it otherwise.
+**Evaluation.** `Modules/AI/resources/evals/triage_v1.json` contains 20 labelled cases. They cover each type of exception and some difficult cases. `php artisan reconflow:ai-eval` calculates the accuracy of the action and the cause, and keeps the result. The oversight page shows the result. The option `--stub` gives a rules-only baseline. CI runs the evaluation only when an `ANTHROPIC_API_KEY` secret exists.
 
-## 3. Human-oversight design
+## 3. Human oversight
 
 ```mermaid
 flowchart LR
-    Rules[Deterministic rules classify item] --> Exc[Exception with rule explanation]
-    Exc --> Ask{Analyst asks AI?}
-    Ask -- no --> Work[Analyst works exception rules-only]
-    Ask -- yes --> Redact[Redact + pseudonymise] --> Claude[Claude] --> Validate[Schema + enum validation] --> Show[Labelled suggestion<br/>model · confidence · evidence]
-    Show --> Decide{Human decision}
-    Decide -- accept --> Log1[Accepted, logged]
-    Decide -- override --> Log2[Override + reason + chosen action, logged]
+    Rules[Rules classify the item] --> Exc[Exception with the rule explanation]
+    Exc --> Ask{Analyst asks the AI?}
+    Ask -- no --> Work[Analyst works on the exception with the rules only]
+    Ask -- yes --> Redact[Redact and replace with tokens] --> Claude[Claude] --> Validate[Check schema and list values] --> Show[Labelled suggestion<br/>model · confidence · evidence]
+    Show --> Decide{Person decides}
+    Decide -- accept --> Log1[Accepted, recorded]
+    Decide -- override --> Log2[Override with reason and chosen action, recorded]
     Log1 --> Work
     Log2 --> Work
-    Work --> Maker[Maker proposes adjustment] --> Checker[Different person approves] --> ERP[ERP posting]
+    Work --> Maker[Maker proposes an adjustment] --> Checker[A different person approves] --> ERP[ERP posting]
 ```
 
-- Suggestions are labelled **AI generated** with the model name, prompt version, confidence and evidence, next to the rule explanation, so users can always compare what the rules said with what the AI suggested.
-- Accepting a suggestion only records agreement. The analyst still acts through the normal workflow, and corrections still need a second person to approve.
-- Overrides require a reason (at least 5 characters) and can record the action the person chose instead.
+- Each suggestion has the label **AI generated**, with the model name, prompt version, confidence and evidence. The rule explanation is adjacent. Thus the user can always compare the rules and the AI.
+- To accept a suggestion only records agreement. The analyst still uses the usual workflow. A second person must still approve each correction.
+- An override needs a reason of 5 or more characters. The user can also record the action that they selected.
 - The AI module can write only to `ai_suggestions`. It has no code path to exceptions, adjustments, postings or sign-offs.
 
 ## 4. Risk assessment
 
 | Risk | Likelihood | Impact | Control | Evidence |
 |---|---|---|---|---|
-| Wrong suggestion leads to a wrong correction | Medium | Medium | Human decision required; maker-checker on every adjustment; rule explanation shown alongside | `ai_suggestions.status`; adjustment approvals |
-| Automation bias (rubber-stamping) | Medium | Medium | Override rate by category and acceptance rate monitored; quarterly review; evidence must be cited | Oversight page |
-| Personal data disclosed to the provider | Low | High | Redaction and scrub before every call; stored input shows exactly what left | `ai_suggestions.input`; governance tests (redaction) |
-| Prompt injection via record fields (for example a payment reference) | Low | Low | Output restricted to an enum-bound schema; AI cannot act; fields are passed as data in JSON | Schema validation |
-| Provider outage or latency | Medium | Low | Graceful degradation; timeouts and retries; kill switch | `ai.suggestion_failed` events; failure rate |
-| Model or prompt drift | Medium | Medium | Versioned prompts; eval set run on change; model pinned in settings | `ai_eval_runs`; `setting_versions` (ai) |
-| Cost runaway | Low | Low | Rate limits (20 triage/min per user, 10 summaries/min), batch cap (200), token usage shown | Oversight tokens tile |
-| API key leakage | Low | High | Key only in env/secrets; never logged (log processor scrubs `sk-ant-…`); not exposed to the browser | Log scrubber; config |
+| An incorrect suggestion causes an incorrect correction | Medium | Medium | A person decides. Maker-checker for each adjustment. The rule explanation is adjacent | `ai_suggestions.status`. Adjustment approvals |
+| Users accept suggestions without a check | Medium | Medium | Monitor the override rate for each category and the acceptance rate. Quarterly review. The AI must give evidence | The oversight page |
+| Personal data goes to the provider | Low | High | Redaction before each call. The stored input shows exactly what the system sent | `ai_suggestions.input`. The redaction tests |
+| Instructions hidden in record fields (for example in a payment reference) | Low | Low | The output schema accepts only list values. The AI cannot do actions. Fields go to the AI as JSON data | Schema validation |
+| The provider is unavailable or slow | Medium | Low | The system continues without the AI. Time limits and retries. Kill switch | Audit events `ai.suggestion_failed`. The failure rate |
+| The model or the prompt changes behaviour | Medium | Medium | Prompts have versions. Run the evaluation set at each change. The model is a setting | `ai_eval_runs`. `setting_versions` (ai) |
+| Costs increase too much | Low | Low | Rate limits (20 triage calls and 10 summaries each minute for each user). A maximum of 200 items in a batch. The page shows token use | The tokens figure on the oversight page |
+| The API key leaks | Low | High | The key is only in the environment or a secret store. The logs remove it (`sk-ant-…`). The browser never gets it | The log filter. The configuration |
 
-## 5. Monitoring metrics (AI oversight page)
+## 5. Figures on the AI oversight page
 
-- Triage volume, acceptance rate, overrides, and **override rate by exception category**
-- Average confidence and failure/timeout rate
-- Average latency and input/output tokens
-- Responses served by the refusal fallback
-- Recent overrides with reasons, recent requests, evaluation runs
-- Kill switch state, who toggled it and when; accountable owner and last review date
+- The number of triage calls, the acceptance rate, the overrides and the **override rate for each exception category**
+- The average confidence and the rate of failures and time-outs
+- The average response time and the input and output tokens
+- The responses from the fallback model
+- The latest overrides with reasons, the latest requests and the evaluation runs
+- The state of the kill switch, who changed it and when. The AI owner and the date of the last review
 
-## 6. Kill switch and degradation
+## 6. Kill switch and operation without the AI
 
-Holders of `ai.manage` can switch the assistant off from the oversight page or Settings. The change is immediate for everyone and audited (`ai.kill_switch_toggled`). With the AI off, or no key configured, exceptions are still categorised by the rules, the AI panels explain why the assistant is unavailable, and every workflow works unchanged.
+A user with `ai.manage` can turn the assistant off on the oversight page or in Settings. The change applies immediately to all users. The audit trail records it (`ai.kill_switch_toggled`). When the AI is off, or when there is no key, the rules still categorise the exceptions. The AI panels show why the assistant is not available. All workflows operate as usual.
 
 ## 7. Go-live gates
 
-1. **DPO approval** of the provider's commercial API terms (data use, retention, sub-processors) and of the **cross-border transfer** of the redacted data, recorded in the DPIA.
-2. Latest eval run on the production model and prompt meets the agreed bar (proposed: recommended action correct in at least 85% of cases, no schema errors).
-3. Accountable AI owner named and first AI review date recorded in Settings.
-4. API key provisioned through the secrets manager, with a budget alert set with the provider.
-5. Analysts briefed that suggestions are advisory and overrides need reasons.
+1. The **DPO approves** the commercial API terms of the provider (data use, retention, sub-processors) and the **transfer of the redacted data out of Kenya**. Record the approval in the DPIA.
+2. The latest evaluation on the production model and prompt meets the agreed level. We propose: the recommended action is correct in 85% or more of the cases, with no schema errors.
+3. Finance names the AI owner and records the date of the first AI review in Settings.
+4. The API key comes from the secret store. The provider account has a budget alert.
+5. The analysts know that suggestions are only advice and that an override needs a reason.
