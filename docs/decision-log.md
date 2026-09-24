@@ -15,6 +15,8 @@ The author (Ian Okonu) led this work. He defined the problem, set the engineerin
 | Tools | Claude (claude.ai) for analysis and specification. Claude Code for the code, the tests, the documents and the deployment |
 | What the author did | Defined the problem and the scope from the brief. Directed and approved the build prompt (`BUILD_PROMPT.md`). Supplied the engineering rules from an earlier project as the base for `CLAUDE.md`, and added rules such as "when in doubt, ask the owner". Set the order of authority. Selected the stack. Decided each rule and each edge case. Approved or rejected each proposal. Selected his server for the deployment and directed it |
 | What the AI tools did under his direction | Claude analysed the brief, compared the approaches and drafted the build prompt, the rules file, the sample data, the answer keys and the edge-case proposals. Claude Code wrote all the application code, the tests and these documents, and it found and repaired defects |
+| Governing documents | The author spent much of the work on the documents that govern the AI tools. These are the build prompt (`BUILD_PROMPT.md`), the engineering rules (`CLAUDE.md`), the order of authority and more than 30 rule decisions. These documents are the policies, guardrails and instructions that the coding agent must obey. Claude drafted the text to the direction of the author. The author set the content and the limits, examined each version and changed it. |
+| Deployment | The author selected an isolated demo environment for the deployment. The AI tool deployed the system only there. Refer to D-19 |
 | How the author controlled the output | Every change goes through the rules in `CLAUDE.md`, the two answer keys, 376 automated tests, Pint and Larastan. The coding agent must ask the author when it is in doubt. The author decided every conflict and edge case that the agent raised |
 
 ## Order of authority
@@ -76,7 +78,7 @@ A person must decide each conflict. The build does not solve a conflict silently
 - **Reason:** The size is correct for one reconciliation each day. It is cheap, easy to operate and easy to hand over.
 - **Trade-off:** There is no high availability. The deployment document gives the path to a managed container service.
 - **Status:** Accepted. High availability is deferred.
-- **AI-assisted tooling:** _Author's direction and decision:_ The author selected his own server. He required a stack that starts with no configuration, for the panel. Claude Code changed the setup to meet this requirement and deployed it on port 8090. _What the AI tools made:_ Claude proposed Docker Compose and a managed host. Claude Code built the Compose stack and the CI pipeline.
+- **AI-assisted tooling:** _Author's direction and decision:_ The author selected his own server. He required a stack that starts with no configuration, for the panel. Claude Code changed the setup to meet this requirement. It deployed the system, to the direction of the author, in the isolated demo environment of D-19. _What the AI tools made:_ Claude proposed Docker Compose and a managed host. Claude Code built the Compose stack and the CI pipeline.
 
 ### D-07 · Segregation of duties
 - **Decision:** The server enforces maker-checker. A person cannot approve an adjustment that they proposed. An adjustment of more than $1,000 needs a Finance Manager. Automated tests prove these controls.
@@ -156,10 +158,31 @@ A person must decide each conflict. The build does not solve a conflict silently
 - **AI-assisted tooling:** _Author's direction and decision:_ The author accepted them, including the credit-sales limit. _What the AI tools made:_ Claude proposed the scope limits.
 
 ### D-18 · Scope for the submission day (2026-09-24)
-- **Decision:** On the last day, the build had priorities in this order: (1) the demo path from end to end; (2) the deployment; (3) the upload preview; (4) the AI assistant; (5) the other features.
+- **Decision:** On the last day, the build had five priorities, in this order:
+  1. The demo path from end to end.
+  2. The deployment.
+  3. The upload preview.
+  4. The AI assistant.
+  5. The other features.
 - **Reason:** The panel must be able to use a working and deployed system. A complete path is more valuable than many incomplete features.
 - **Status:** Accepted. All items in the scope are complete.
 - **AI-assisted tooling:** _Author's direction and decision:_ The author accepted the order. _What the AI tools made:_ Claude proposed the priority order for the last day.
+
+### D-19 · Governance of the AI tools during the build
+- **Options:** let the AI tools work without limits; do not use AI tools; use AI tools inside documented guardrails, with a person who decides.
+- **Decision:** The AI tools worked only inside written guardrails:
+  - `CLAUDE.md` gives the engineering rules. Each rule is mandatory. The coding agent must ask the author when it is in doubt, and it must not solve a conflict silently.
+  - `BUILD_PROMPT.md` gives the scope and the phases.
+  - The answer keys in `samples/` are read-only. The agent must not change them to make a test pass.
+  - The author decided each conflict and each edge case that the agent raised.
+- **Deployment:** the author selected an isolated demo environment. The AI tool deployed only to this environment. The environment has these properties:
+  - ReconFlow has its own containers, Docker networks and volumes on the demo server. The database is on an internal network with no access from outside.
+  - Only one port (8090) is open. The other services on the server did not change.
+  - The data is synthetic only. There is no connection to Tupande systems or to real customer data.
+- **Production rule:** an AI tool must not deploy to production. For production, a person approves each release at the Tier 1 release gate of the operating model. The CI pipeline then deploys it.
+- **Reason:** AI tools make delivery fast. Written guardrails and human decisions keep the quality and the control. The same approach is part of the operating model: "AI-assisted engineering is encouraged but always reviewed and recorded."
+- **Status:** Accepted
+- **AI-assisted tooling:** _Author's direction and decision:_ The author set the guardrails, the order of authority and the isolated environment. He decided that the agent must ask when it is in doubt. _What the AI tools made:_ Claude drafted `CLAUDE.md` from the rules of an earlier project of the author. Claude Code obeyed the guardrails and raised conflicts for the author to decide.
 
 ---
 
