@@ -8,7 +8,7 @@ Each entry also has an **AI-assisted tooling** field. It gives my direction or d
 
 ## AI-assisted tooling: summary
 
-I (Ian Okonu) led this work. I defined the problem, set the engineering standards, gave the direction for each part and made every decision. I used AI tools to do the drafting and the coding under my direction. I examined the results and changed or rejected them when necessary.
+I led this work. I defined the problem, set the engineering standards, gave the direction for each part and made every decision. I used AI tools to do the drafting and the coding under my direction. I examined the results and changed or rejected them when necessary.
 
 | Item | Entry |
 |---|---|
