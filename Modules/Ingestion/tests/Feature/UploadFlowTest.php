@@ -149,7 +149,9 @@ it('refuses rows whose keys already exist when appending', function (): void {
     $this->post(route('ingestion.uploads.confirm', $again), ['mode' => 'append']);
 
     $appended = SourceBatch::query()->latest('id')->firstOrFail();
-    expect($appended->rows_loaded)->toBe(0)
+    expect($appended->mode->value)->toBe('upload_append')
+        ->and($appended->rows_added)->toBe(0)
+        ->and($appended->rows_loaded)->toBe(59)
         ->and($appended->dq_summary['reasons'])->toHaveKey('transaction_id TUP-S-000001 already exists for this date: use Replace');
 });
 

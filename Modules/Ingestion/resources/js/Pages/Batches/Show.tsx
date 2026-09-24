@@ -1,4 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
+import { Button } from '@/components/ui/button';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -13,6 +15,7 @@ interface Props {
 
 export default function BatchShow({ batch: { data: batch }, quarantined }: Props) {
     const reasons = Object.entries(batch.quarantine_reasons);
+    const { can } = usePermissions();
 
     return (
         <AppLayout>
@@ -30,7 +33,14 @@ export default function BatchShow({ batch: { data: batch }, quarantined }: Props
                             {batch.origin === 'upload' ? `Uploaded file ${batch.filename} by ${batch.created_by}` : 'Pulled from the simulated source system'} · {formatDateTime(batch.created_at)}
                         </p>
                     </div>
-                    <StateBadge state={batch.status} />
+                    <div className="flex items-center gap-2">
+                        <StateBadge state={batch.status} />
+                        {can('runs.trigger') && batch.status === 'active' && (
+                            <Button asChild size="sm">
+                                <Link href={route('runs.index', { date: batch.business_date })}>Run reconciliation for this date</Link>
+                            </Button>
+                        )}
+                    </div>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-3">
                     {[

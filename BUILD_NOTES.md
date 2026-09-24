@@ -20,12 +20,41 @@ Running log of technical choices, simplifications and known limitations. Newest 
 | 2026-09-23 | Local development and tests use the owner's local PostgreSQL 16 (`reconflow`, `reconflow_test`) | Owner | |
 | 2026-09-23 | No comments or docblocks in code | Owner | Names carry intent; explanations live in docs |
 | 2026-09-23 | R6 posting check compares the posted amount with the **expected** amount | Answer key (`Rules reference` sheet) ranks above the brief | The brief said "matched amount"; the golden data gives the same result either way |
+| 2026-09-24 | Ingestion and reconciliation are separate: the daily job pulls then reconciles; Run now reconciles loaded data unless "Refresh from sources first" is ticked; one active batch per source per date; the job skips sources whose active batch is manual ("manual upload in effect"); refreshing over an upload needs an explicit keep/replace choice; a pull only creates a new batch if the checksum changed; runs store the exact batch versions used; no active batch means BLOCKED_DATA (except PROVISIONAL runs) | Owner | |
+| 2026-09-24 | Batch versions are immutable, complete snapshots; Append copies the active rows plus the new rows into a new version (`parent_batch_id`, mode PULL / UPLOAD_REPLACE / UPLOAD_APPEND, `manual`, `rows_added`); an append onto a pull sets manual | Owner | Replaces Phase 2's second-active-batch Append |
+| 2026-09-24 | PENDING_TIMING gets one carry-forward, then escalates to MISSING_PAYMENT ("no payment by close of D+1 window"); late payments match open MISSING_PAYMENT items from the last 7 days by exact reference | Owner | |
+| 2026-09-24 | Prior-day matches are reported in a separate section (MATCHED_PRIOR_DAY, roll-up "Match (prior day)", tags "Paid next day" / "Paid late (D+n)"), excluded from the day's metrics, with separate prior-day KPIs; D's results are never rewritten; every payment appears exactly once | Owner | |
+| 2026-09-24 | Several referencing payments whose total is off by more than the tolerance are one VARIANCE (`R2+R4`, flag split) | Owner | |
+| 2026-09-24 | Boundaries: tolerance, fuzzy window, duplicate window and timing cut-off are inclusive; the extract window is start-inclusive, end-exclusive | Owner | |
 | 2026-09-24 | 2026-09-22 is seeded with **generated** data like every other day; the answer key is reproduced by uploading all three golden files with Replace | Owner | |
 | 2026-09-24 | Extra quarantine rules: sales **business_date must equal the batch date**; payment timestamp must fall **inside the extract window** (D 00:00 → D+1 06:00 EAT) | Owner | Neither case occurs in the samples |
 | 2026-09-24 | Amounts with **more than 2 decimals are quarantined** ("Amount has more than 2 decimal places"), never rounded; values within 1e-9 of a 2-dp number are treated as that number (Excel float noise); trailing zeros are fine | Owner | |
 | 2026-09-24 | Duplicate keys: (1) exact duplicate row in a file → keep first, quarantine the copy ("Duplicate row: exact copy of row N"); (2) same transaction_id/journal_id with different content → quarantine **all** rows sharing it ("Conflicting records share <key>"); (3) key already loaded for the date on Append → preview says "already exists for this date: use Replace" and it is not imported; (4) two different POSTED journal_ids for one transaction_id → new status **DUPLICATE_POSTING** (roll-up Exception), REVERSED lines excluded. Payment duplicates stay R5 DUPLICATE_PAYMENT exactly as the answer keys define | Owner | |
 | 2026-09-24 | **Payment ownership:** a payment belongs to its own timestamp date. The D run may match payments from D+1 00:00–06:00 against D sales; a match claims the payment for D. Unmatched grace-window payments are **not** reported as UNMATCHED_PAYMENT on D. The D+1 run excludes payments claimed by the latest D run version and can match D's open PENDING_TIMING sales (auto-resolving them). Re-running D after D+1 exists marks D+1 **STALE** (needs re-run) | Owner | Verified compatible: all 27 grace-window payments in both answer keys are MATCHED |
 | 2026-09-24 | **Run now** defaults to the latest **closed** business date (window closed at D+1 06:00 EAT; same logic as the scheduled job). Any date can be chosen; an open date's run is **PROVISIONAL** (banner, timing exceptions expected, cannot be signed off) | Owner | |
+
+## Phase 3: Engine
+
+### What exists
+- **Reconciliation module.** A pure engine (`Engine/ReconciliationEngine`) composes rule classes that do no I/O, read no clock and use no randomness. Amounts are integer cents and times are Unix seconds. The order is R5 duplicates → R1/R2 current-day references → R1/R2 prior-day items → R3 fuzzy (strict one-to-one; a sale or payment with more than one candidate leaves everyone involved unmatched, rule `R3 tie → R7`) → R4/R6 (VARIANCE takes precedence over posting checks; posting mismatch is an exact comparison; DUPLICATE_POSTING when two different POSTED journals exist) → R7 leftovers (timing window, grace-window exclusion, escalations).
+- **Runs.** `QueueRun` creates a versioned run with a snapshot of the rule config, flagged PROVISIONAL when the date's payment window is still open. `ExecuteRun` optionally refreshes from source systems (respecting manual uploads), blocks with BLOCKED_DATA when a source has no data, reconciles under a per-date advisory lock, writes results, supersedes the previous version, records the exact batch versions used, marks the next date STALE when an earlier date is re-run, and audits every outcome. Failures are recorded as FAILED and re-thrown.
+- **Prior-day items.** `ItemStateLedger` lists open prior items (carried PENDING_TIMING within `timing_carry_days`; open MISSING_PAYMENT and escalated items within `late_payment_lookback_days`), records resolutions and escalations with audit events, and releases decisions made by superseded runs so that re-running a date recomputes cleanly. Payments claimed by the previous date's latest run are excluded, so every payment appears exactly once.
+- **Rule settings** are versioned in `recon_rule_configs` (defaults from the answer keys); each change is audited and each run stores the version it used.
+- **Scheduling.** `recon:daily` runs at the configured time (06:00 Africa/Nairobi): pull, then reconcile the latest closed date, retrying BLOCKED_DATA every 30 minutes up to 12 attempts. Run now queues an `ExecuteRunJob`; the run page polls until the run finishes. Demo seeding reconciles every seeded date in order.
+- **Pages.** Runs history with Run now (latest closed date preselected, source readiness, refresh with keep/replace for manual uploads, provisional warning); run detail with status, provisional/stale/blocked banners, metrics (match rate, value reconciled, value at variance, exceptions, prior-day cleared, escalations) and the batches used.
+
+### Verification
+- **The golden and volume answer keys are reproduced exactly:** every item's transaction, payments, status and rule ID (65 and 2,531 items), from files imported through the upload API.
+- 34 rule unit tests including every boundary (±$0.50, ±24 h, 22:00:00, 5 minutes, window end), ties, instalment variances, posting checks and prior-day matching.
+- Lifecycle tests: versioning and idempotent re-runs, batch references, BLOCKED_DATA, PROVISIONAL, STALE, carry-forward clearing, escalation and recomputation on re-run, manual-upload refresh policy, the exactly-once payment invariant across consecutive days, demo seeding and versioned settings.
+- Performance: 50,000 sales reconcile in about 7.4 s (budget 60 s); the test runs in CI.
+- 250 Pest tests pass; Larastan 0 errors; Pint, ESLint, tsc and the Vite build are clean. In Docker, first boot seeds and reconciles 14 days (about 0.7 s per day, match rate 95–96%).
+
+### Simplifications and known limitations
+- BLOCKED_DATA retries each create a new run version, so the history shows every attempt.
+- Postings with no sale are not reported (no status defined); see `docs/assumptions.md`.
+- The full reconciliation report page with filters and exports is part of Phase 6 (the data and roll-ups exist now).
+- Sign-off locking arrives with the workflow in Phase 4.
 
 ## Phase 2: Data
 

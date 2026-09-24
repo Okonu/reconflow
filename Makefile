@@ -22,7 +22,8 @@ test:
 	npm run types
 
 test-all:
-	./vendor/bin/pest --group=slow,default
+	./vendor/bin/pest
+	./vendor/bin/pest --group=slow
 	npm run types
 
 lint:

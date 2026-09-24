@@ -15,4 +15,5 @@ parameters:
         - Modules/Rbac/database/migrations
         - Modules/Audit/database/migrations
         - Modules/Ingestion/database/migrations
+        - Modules/Reconciliation/database/migrations
     treatPhpDocTypesAsCertain: false

@@ -8,8 +8,8 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Modules\Ingestion\DTOs\BatchMeta;
 use Modules\Ingestion\DTOs\ValidationOutcome;
+use Modules\Ingestion\Enums\BatchMode;
 use Modules\Ingestion\Enums\BatchStatus;
-use Modules\Ingestion\Enums\ImportMode;
 use Modules\Ingestion\Enums\SourceType;
 use Modules\Ingestion\Models\SourceBatch;
 use Modules\Ingestion\Support\Schema\RowResult;
@@ -18,39 +18,65 @@ final class BatchWriter
 {
     private const CHUNK = 1000;
 
+    public const RECORD_COLUMNS = [
+        'sales' => ['business_date', 'row_number', 'transaction_id', 'sold_at', 'agent_id', 'customer_phone', 'region', 'product_sku', 'expected_amount', 'currency', 'payment_reference'],
+        'payments' => ['business_date', 'payment_date', 'row_number', 'payment_id', 'paid_at', 'channel', 'payer_phone', 'amount', 'currency', 'reference'],
+        'postings' => ['business_date', 'row_number', 'journal_id', 'posting_date', 'transaction_id', 'account', 'amount', 'currency', 'status'],
+    ];
+
+    public function __construct(private readonly ActiveDataset $dataset) {}
+
     public function write(BatchMeta $meta, ValidationOutcome $outcome): SourceBatch
     {
-        $version = (int) SourceBatch::query()->for($meta->source, $meta->businessDate)->max('version') + 1;
-        $valid = $outcome->valid();
-        $invalid = $outcome->invalid();
+        return DB::transaction(function () use ($meta, $outcome): SourceBatch {
+            $parent = $this->dataset->activeBatch($meta->source, $meta->businessDate);
+            $version = (int) SourceBatch::query()->for($meta->source, $meta->businessDate)->max('version') + 1;
+            $valid = $outcome->valid();
+            $invalid = $outcome->invalid();
+            $copied = $meta->mode === BatchMode::UploadAppend && $parent !== null ? $parent->rows_loaded : 0;
 
-        $batch = SourceBatch::query()->create([
-            'source' => $meta->source,
-            'business_date' => $meta->businessDate,
-            'version' => $version,
-            'origin' => $meta->origin,
-            'status' => BatchStatus::Active,
-            'mode' => $meta->mode,
-            'filename' => $meta->filename,
-            'checksum' => $meta->checksum,
-            'rows_received' => count($outcome->rows),
-            'rows_loaded' => count($valid),
-            'rows_quarantined' => count($invalid),
-            'dq_summary' => $this->summary($meta, $outcome),
-            'extracted_at' => $meta->extractedAt,
-            'created_by' => $meta->createdBy,
-        ]);
+            if ($parent !== null) {
+                $parent->update(['status' => BatchStatus::Superseded]);
+            }
 
-        if ($meta->mode === ImportMode::Replace) {
-            SourceBatch::query()->active()->for($meta->source, $meta->businessDate)
-                ->whereKeyNot($batch->id)
-                ->update(['status' => BatchStatus::Superseded->value, 'superseded_by_id' => $batch->id]);
-        }
+            $batch = SourceBatch::query()->create([
+                'source' => $meta->source,
+                'business_date' => $meta->businessDate,
+                'version' => $version,
+                'parent_batch_id' => $parent?->id,
+                'origin' => $meta->mode->origin(),
+                'status' => BatchStatus::Active,
+                'mode' => $meta->mode,
+                'manual' => $meta->mode !== BatchMode::Pull,
+                'filename' => $meta->filename,
+                'checksum' => $meta->checksum,
+                'rows_received' => count($outcome->rows),
+                'rows_loaded' => $copied + count($valid),
+                'rows_added' => count($valid),
+                'rows_quarantined' => count($invalid),
+                'dq_summary' => $this->summary($meta, $outcome, $copied),
+                'extracted_at' => $meta->extractedAt,
+                'created_by' => $meta->createdBy,
+            ]);
 
-        $this->insertRecords($meta->source, $batch, $valid);
-        $this->insertQuarantine($meta->source, $batch, $invalid);
+            if ($parent !== null) {
+                $parent->update(['superseded_by_id' => $batch->id]);
+                if ($copied > 0) {
+                    $this->copyRecords($meta->source, $parent->id, $batch->id);
+                }
+            }
+            $this->insertRecords($meta->source, $batch, $valid);
+            $this->insertQuarantine($meta->source, $batch, $invalid);
 
-        return $batch;
+            return $batch;
+        });
+    }
+
+    private function copyRecords(SourceType $source, int $fromBatchId, int $toBatchId): void
+    {
+        $table = self::table($source);
+        $columns = implode(', ', self::RECORD_COLUMNS[$source->value]);
+        DB::statement("insert into {$table} (batch_id, {$columns}) select ?, {$columns} from {$table} where batch_id = ? order by id", [$toBatchId, $fromBatchId]);
     }
 
     private function insertRecords(SourceType $source, SourceBatch $batch, array $rows): void
@@ -58,7 +84,7 @@ final class BatchWriter
         $date = $batch->business_date->toDateString();
         $timezone = (string) config('reconflow.display_timezone');
         foreach (array_chunk($rows, self::CHUNK) as $chunk) {
-            DB::table($this->table($source))->insert(array_map(
+            DB::table(self::table($source))->insert(array_map(
                 fn (RowResult $row): array => $this->record($source, $batch->id, $date, $timezone, $row),
                 $chunk,
             ));
@@ -121,22 +147,22 @@ final class BatchWriter
         }
     }
 
-    private function summary(BatchMeta $meta, ValidationOutcome $outcome): array
+    private function summary(BatchMeta $meta, ValidationOutcome $outcome, int $copied): array
     {
         $received = count($outcome->rows);
 
         return [
             'rows_received' => $received,
-            'rows_loaded' => count($outcome->valid()),
+            'rows_copied_from_parent' => $copied,
+            'rows_added' => count($outcome->valid()),
             'rows_quarantined' => count($outcome->invalid()),
             'reasons' => $outcome->reasonCounts(),
-            'empty' => $received === 0,
+            'empty' => $received === 0 && $copied === 0,
             'mode' => $meta->mode->value,
-            'origin' => $meta->origin->value,
         ];
     }
 
-    private function table(SourceType $source): string
+    public static function table(SourceType $source): string
     {
         return match ($source) {
             SourceType::Sales => 'sales_records',

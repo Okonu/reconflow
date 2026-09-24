@@ -114,6 +114,7 @@ Detailed status → roll-up shown to business users, mirroring the brief's repor
 | `UNMATCHED_PAYMENT` | Exception | Payment with no corresponding sale (the brief's "Expected: Missing") |
 | `MISSING_POSTING` | Exception | Sale and payment match but nothing is posted in the ERP |
 | `DUPLICATE_PAYMENT` | Exception | Same receipt twice, or same reference + amount within 5 minutes |
+| `MATCHED_PRIOR_DAY` | Match (prior day) | A carried PENDING_TIMING sale or an open MISSING_PAYMENT from the last 7 days cleared by a payment on this date; reported in a separate section, excluded from the day's metrics. Owner decision 2026-09-24 |
 | `DUPLICATE_POSTING` | Exception | Two different POSTED journal lines for the same transaction_id (REVERSED lines excluded). Owner decision 2026-09-24 |
 
 ### 3.4 Matching rules (apply in this order; each result records `rule_id`)
@@ -330,7 +331,7 @@ reconflow/
     Audit/                      # hash-chained logger, verifier, archive + checkpoint        [Phase 1: built]
     DataProtection/             # classification, masking, pseudonymiser, PII log processor  [Phase 1: built; retention/erasure later]
     Ingestion/                  # connectors (mock + upload), staging, data quality, templates, mock source APIs, synthetic data   [Phase 2: built]
-    Reconciliation/             # rules R1–R7, engine, runs, results, report exports, rule settings
+    Reconciliation/             # rules R1–R7, engine, runs, results, report exports, rule settings   [Phase 3: built]
     ExceptionManagement/        # exception workflow, assignment, SLA, run sign-off
     Adjustments/                # maker-checker approvals, ERP posting
     AI/                         # ClaudeClient, Redactor, prompts, suggestions, oversight, kill switch
@@ -391,7 +392,7 @@ Stop after each phase, summarise what exists, list assumptions made, and wait fo
 
 1. **Foundation** ✅ *(built 2026-09-24)*: Laravel app with Users, Rbac, Audit and DataProtection modules; shared kernel in `app/`; migrations; session auth + permissions-first RBAC with policies; data classification, masking, pseudonymisation and PII-safe logging; hash-chained audit logger, verifier and automatic archive with checkpoints; health/readiness/metrics; Inertia shell with login; multi-stage Docker image (FrankenPHP), compose (app, worker, scheduler, postgres, caddy); CI (Pint, Larastan, ESLint, tsc, Vite build, Pest, GHCR push, optional SSH deploy). 85 Pest tests passing. *Checkpoint: `make up` boots; login works; CI green.*
 2. **Data** ✅ *(built 2026-09-24)*: synthetic generator (template-format export), golden/volume fixtures wired into tests, mock source APIs, connectors, **upload → staging → preview → confirm** API, template download endpoint, DQ validation + quarantine, reset demo data. *Checkpoint: 14 days seeded; DQ report visible via API.*
-3. **Engine:** rules R1–R7, engine, run versioning, scheduler, run-now endpoint, all rule/golden/idempotency tests. *Checkpoint: golden test passes; 50k perf test passes.*
+3. **Engine** ✅ *(built 2026-09-24)*: rules R1–R7, engine, run versioning, scheduler, run-now endpoint, all rule/golden/idempotency tests. *Checkpoint: golden test passes; 50k perf test passes.*
 4. **Workflow:** exceptions, state machine, assignment/SLA, adjustments, approvals with SoD and thresholds, mock ERP posting with idempotency, run sign-off, notifications. *Checkpoint: full API flow scripted in a test.*
 5. **AI assist:** Claude triage client with schema validation, batching, fallback, storage of suggestions and human decisions; narrative summary. Include the `redact()` layer, override-reason capture, kill switch, AI oversight panel and eval set. *Checkpoint: works with a key and without one; governance tests pass.*
 6. **Frontend:** all pages in section 7, wired to the API, polished. *Checkpoint: click-through demo of the full story.*

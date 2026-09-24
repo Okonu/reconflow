@@ -71,6 +71,9 @@ jobs:
       - name: Pest
         run: ./vendor/bin/pest --coverage --min=0 --coverage-clover=coverage.xml
 
+      - name: Performance (50k sales under 60s)
+        run: ./vendor/bin/pest --group=slow
+
       - uses: actions/upload-artifact@v4
         with:
           name: coverage

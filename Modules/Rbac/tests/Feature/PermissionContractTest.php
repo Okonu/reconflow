@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\Ingestion\Models\SourceBatch;
 use Modules\Ingestion\Models\UploadStaging;
 use Modules\Rbac\Models\Role;
+use Modules\Reconciliation\Models\ReconRun;
 
 const PERMISSION_CONTRACT = [
     'audit log' => ['GET', 'audit.index', [], 'audit.view'],
@@ -30,6 +31,9 @@ const PERMISSION_CONTRACT = [
     'batches' => ['GET', 'ingestion.batches.index', [], 'batches.view'],
     'batch detail' => ['GET', 'ingestion.batches.show', ['batch' => 'batch'], 'batches.view'],
     'reset demo' => ['POST', 'ingestion.demo.reset', [], 'demo.reset'],
+    'runs' => ['GET', 'runs.index', [], 'runs.view'],
+    'run now' => ['POST', 'runs.store', [], 'runs.trigger'],
+    'run detail' => ['GET', 'runs.show', ['run' => 'run'], 'runs.view'],
 ];
 
 dataset('protected routes', PERMISSION_CONTRACT);
@@ -48,8 +52,8 @@ function contractStaging($user): UploadStaging
 function contractBatch(): SourceBatch
 {
     return SourceBatch::query()->create([
-        'source' => 'sales', 'business_date' => '2026-09-22', 'version' => random_int(1, 1000000), 'origin' => 'upload', 'status' => 'active',
-        'mode' => 'replace', 'checksum' => str_repeat('b', 64), 'rows_received' => 0, 'rows_loaded' => 0, 'rows_quarantined' => 0,
+        'source' => 'sales', 'business_date' => '2026-'.sprintf('%02d-%02d', random_int(1, 12), random_int(1, 28)), 'version' => random_int(1, 1000000), 'origin' => 'upload', 'status' => 'active',
+        'mode' => 'upload_replace', 'checksum' => str_repeat('b', 64), 'rows_received' => 0, 'rows_loaded' => 0, 'rows_quarantined' => 0,
         'dq_summary' => ['reasons' => []],
     ]);
 }
@@ -61,6 +65,7 @@ function contractUrl(string $name, array $params, $user): string
         $v === 'self' => $user->id,
         $v === 'staging' => contractStaging($user)->id,
         $v === 'batch' => contractBatch()->id,
+        $v === 'run' => ReconRun::query()->create(['business_date' => '2026-09-22', 'version' => random_int(1, 1000000), 'status' => 'queued', 'trigger' => 'manual', 'rule_config' => []])->id,
         str_starts_with($v, '=') => substr($v, 1),
     }, $params);
 

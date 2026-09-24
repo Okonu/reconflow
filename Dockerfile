@@ -6,6 +6,7 @@ COPY Modules/Rbac/composer.json Modules/Rbac/composer.json
 COPY Modules/Audit/composer.json Modules/Audit/composer.json
 COPY Modules/DataProtection/composer.json Modules/DataProtection/composer.json
 COPY Modules/Ingestion/composer.json Modules/Ingestion/composer.json
+COPY Modules/Reconciliation/composer.json Modules/Reconciliation/composer.json
 RUN composer install --no-dev --no-interaction --no-progress --no-scripts --no-autoloader --prefer-dist --ignore-platform-reqs
 
 FROM node:22-alpine AS assets

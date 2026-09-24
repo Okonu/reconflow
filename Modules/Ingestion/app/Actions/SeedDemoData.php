@@ -25,7 +25,7 @@ final class SeedDemoData
         if ($ingest) {
             foreach ($dates as $date) {
                 foreach (SourceType::cases() as $source) {
-                    $this->ingest->handle($source, $date, $actor);
+                    $this->ingest->handle($source, $date, $actor, replaceManual: true);
                 }
             }
             DemoDataSeeded::dispatch($dates);

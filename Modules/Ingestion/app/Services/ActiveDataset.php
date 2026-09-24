@@ -10,9 +10,14 @@ use Modules\Ingestion\Models\SourceBatch;
 
 final class ActiveDataset
 {
+    public function activeBatch(SourceType $source, string $date): ?SourceBatch
+    {
+        return SourceBatch::query()->active()->for($source, $date)->first();
+    }
+
     public function hasData(SourceType $source, string $date): bool
     {
-        return SourceBatch::query()->active()->for($source, $date)->exists();
+        return $this->activeBatch($source, $date) !== null;
     }
 
     public function activeBatchIds(SourceType $source, string $date): array
@@ -23,17 +28,13 @@ final class ActiveDataset
     public function existingKeys(SourceType $source, string $date): array
     {
         $column = $source->schema()->uniqueKeyColumn();
-        if ($column === null) {
+        $batch = $this->activeBatch($source, $date);
+        if ($column === null || $batch === null) {
             return [];
         }
-        $table = match ($source) {
-            SourceType::Sales => 'sales_records',
-            SourceType::Postings => 'posting_records',
-            SourceType::Payments => 'payment_records',
-        };
 
-        return DB::table($table)
-            ->whereIn('batch_id', $this->activeBatchIds($source, $date))
+        return DB::table(BatchWriter::table($source))
+            ->where('batch_id', $batch->id)
             ->pluck($column)
             ->flip()
             ->map(fn () => true)

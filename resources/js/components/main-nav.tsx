@@ -3,6 +3,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { cn } from '@/lib/utils';
 
 const LINKS = [
+    { label: 'Runs', route: 'runs.index', permission: 'runs.view' },
     { label: 'Data uploads', route: 'ingestion.uploads.index', permission: 'uploads.view' },
     { label: 'Source batches', route: 'ingestion.batches.index', permission: 'batches.view' },
     { label: 'Audit log', route: 'audit.index', permission: 'audit.view' },

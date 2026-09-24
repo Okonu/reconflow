@@ -8,7 +8,7 @@ use App\Exceptions\DomainException;
 use Illuminate\Support\Facades\DB;
 use Modules\Audit\Services\AuditLogger;
 use Modules\Ingestion\DTOs\BatchMeta;
-use Modules\Ingestion\Enums\BatchOrigin;
+use Modules\Ingestion\Enums\BatchMode;
 use Modules\Ingestion\Enums\ImportMode;
 use Modules\Ingestion\Enums\IngestionAuditAction;
 use Modules\Ingestion\Enums\StagingState;
@@ -51,12 +51,11 @@ final class ConfirmUpload
         $outcome = $this->validator->validate($source, $raw, ValidationContext::forDate($date), $existingKeys);
 
         return DB::transaction(function () use ($user, $staging, $source, $date, $mode, $outcome, $hasData): SourceBatch {
-            $superseded = $mode === ImportMode::Replace ? $this->dataset->activeBatchIds($source, $date) : [];
+            $superseded = $this->dataset->activeBatchIds($source, $date);
             $batch = $this->writer->write(new BatchMeta(
                 source: $source,
                 businessDate: $date,
-                origin: BatchOrigin::Upload,
-                mode: $mode,
+                mode: $mode === ImportMode::Append ? BatchMode::UploadAppend : BatchMode::UploadReplace,
                 checksum: $staging->checksum,
                 filename: $staging->filename,
                 createdBy: $user->id,
@@ -72,7 +71,9 @@ final class ConfirmUpload
                 'mode' => $mode->value,
                 'replaced_existing_data' => $hasData && $mode === ImportMode::Replace,
                 'rows_loaded' => $batch->rows_loaded,
+                'rows_added' => $batch->rows_added,
                 'rows_quarantined' => $batch->rows_quarantined,
+                'parent_batch_id' => $batch->parent_batch_id,
             ]);
             if ($superseded !== []) {
                 $this->audit->record(IngestionAuditAction::BatchSuperseded, $user, 'source_batch', $batch->id, [

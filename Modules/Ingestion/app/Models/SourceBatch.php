@@ -8,24 +8,25 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Ingestion\Enums\BatchMode;
 use Modules\Ingestion\Enums\BatchOrigin;
 use Modules\Ingestion\Enums\BatchStatus;
-use Modules\Ingestion\Enums\ImportMode;
 use Modules\Ingestion\Enums\SourceType;
 use Modules\Users\Models\User;
 
 final class SourceBatch extends Model
 {
     protected $fillable = [
-        'source', 'business_date', 'version', 'origin', 'status', 'mode', 'filename', 'checksum',
-        'rows_received', 'rows_loaded', 'rows_quarantined', 'dq_summary', 'extracted_at', 'created_by', 'superseded_by_id',
+        'source', 'business_date', 'version', 'parent_batch_id', 'origin', 'status', 'mode', 'manual', 'filename', 'checksum',
+        'rows_received', 'rows_loaded', 'rows_added', 'rows_quarantined', 'dq_summary', 'extracted_at', 'created_by', 'superseded_by_id',
     ];
 
     protected $casts = [
         'source' => SourceType::class,
         'origin' => BatchOrigin::class,
         'status' => BatchStatus::class,
-        'mode' => ImportMode::class,
+        'mode' => BatchMode::class,
+        'manual' => 'boolean',
         'business_date' => 'immutable_date',
         'extracted_at' => 'immutable_datetime',
         'dq_summary' => 'array',
