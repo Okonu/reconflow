@@ -42,7 +42,7 @@ final class Redactor
                 'received_amount' => $result->actual_amount === null ? null : (string) $result->actual_amount,
                 'posted_amount' => $result->posted_amount === null ? null : (string) $result->posted_amount,
                 'variance' => $result->variance === null ? null : (string) $result->variance,
-                'flags' => array_values(array_keys(array_filter((array) $result->flags))),
+                'flags' => array_keys(array_filter((array) $result->flags)),
                 'tag' => $result->tag,
             ],
             'sale' => $sale === null ? null : [

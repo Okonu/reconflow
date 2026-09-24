@@ -10,6 +10,15 @@ use Illuminate\Foundation\Auth\User;
 
 final class SettingsPolicy
 {
+    public const VIEW_PAGE_PERMISSION = 'config.view';
+
+    public function viewPage(User $user): Response
+    {
+        return $user->can(self::VIEW_PAGE_PERMISSION)
+            ? Response::allow()
+            : Response::deny('Missing permission: '.self::VIEW_PAGE_PERMISSION);
+    }
+
     public function view(User $user, SettingsSection $section): Response
     {
         return $user->can($section->viewPermission()) || $user->can($section->managePermission())

@@ -17,7 +17,6 @@ final class AuditExportController extends Controller
 {
     public function __invoke(ListAuditEventsRequest $request, AuditLogger $audit): StreamedResponse
     {
-        $this->authorize('export', AuditEvent::class);
         $filters = $request->filters();
         $query = AuditEvent::query()->filtered($filters)->orderBy('id');
         $audit->record(AuditAction::Exported, $request->user(), 'audit_event', null, ['filters' => $filters->toArray(), 'rows' => (clone $query)->count()]);

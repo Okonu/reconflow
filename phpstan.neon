@@ -11,6 +11,7 @@ parameters:
         - Modules/*/resources/*
         - Modules/*/config/*
     databaseMigrationsPath:
+        - database/migrations
         - Modules/Users/database/migrations
         - Modules/Rbac/database/migrations
         - Modules/Audit/database/migrations

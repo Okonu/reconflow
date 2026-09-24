@@ -49,7 +49,7 @@ final class ReportRequest extends FormRequest
         );
     }
 
-    public function format(): string
+    public function exportFormat(): string
     {
         return (string) ($this->validated('format') ?? 'xlsx');
     }

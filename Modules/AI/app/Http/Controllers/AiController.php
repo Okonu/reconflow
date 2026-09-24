@@ -33,7 +33,6 @@ final class AiController extends Controller
     public function triage(Request $request, ReconException $exception, TriageService $triage): RedirectResponse
     {
         $this->authorize('create', AiSuggestion::class);
-        $this->authorize('view', $exception);
         try {
             $triage->suggest($this->user($request), $exception);
         } catch (AiUnavailable $e) {
@@ -86,7 +85,6 @@ final class AiController extends Controller
     public function summarise(Request $request, ReconRun $run, NarrativeService $narrative): JsonResponse
     {
         $this->authorize('create', AiSuggestion::class);
-        $this->authorize('view', $run);
         try {
             $summary = $narrative->summarise($this->user($request), $run);
         } catch (AiUnavailable $e) {

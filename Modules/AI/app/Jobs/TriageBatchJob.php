@@ -35,7 +35,7 @@ final class TriageBatchJob implements ShouldQueue
             return;
         }
         foreach (array_chunk($this->exceptionIds, 50) as $chunk) {
-            foreach (ReconException::query()->whereKey($chunk)->get() as $exception) {
+            foreach (ReconException::query()->with('result.run')->whereKey($chunk)->get() as $exception) {
                 if (! $settings->enabled()) {
                     return;
                 }

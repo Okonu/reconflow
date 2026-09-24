@@ -70,7 +70,10 @@ jobs:
         run: npm run build
 
       - name: Pest
-        run: ./vendor/bin/pest --coverage --min=0 --coverage-clover=coverage.xml
+        run: mkdir -p build && ./vendor/bin/pest --exclude-group=slow --coverage --min=0 --coverage-clover=coverage.xml --log-junit build/junit.xml
+
+      - name: Test report
+        run: php scripts/test-report.php build/junit.xml coverage.xml
 
       - name: Performance (50k sales under 60s)
         run: ./vendor/bin/pest --group=slow
@@ -84,7 +87,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: coverage
-          path: coverage.xml
+          path: |
+            coverage.xml
+            docs/test-report.md
 
   image:
     needs: quality

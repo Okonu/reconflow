@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'ReconFlow'),
 
     'env' => env('APP_ENV', 'production'),
 

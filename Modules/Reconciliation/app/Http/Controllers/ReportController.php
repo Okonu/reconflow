@@ -79,7 +79,7 @@ final class ReportController extends Controller
             return back()->with('error', "No completed reconciliation for {$filters->date}.");
         }
         $rows = $report->rows($run, $filters);
-        $format = $request->format();
+        $format = $request->exportFormat();
         $audit->record(ReconAuditAction::ReportExported, $request->user(), 'recon_run', $run->id, [
             'business_date' => $filters->date,
             'format' => $format,

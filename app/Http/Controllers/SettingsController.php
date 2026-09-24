@@ -17,6 +17,7 @@ final class SettingsController extends Controller
 {
     public function index(Request $request, SettingsSections $sections): Response
     {
+        Gate::authorize('viewSettingsPage');
         $user = $request->user();
         $visible = array_filter($sections->all(), fn (SettingsSection $s): bool => $user !== null && Gate::forUser($user)->allows('viewSettings', $s));
         abort_if($visible === [], 403, 'You do not have access to any settings.');

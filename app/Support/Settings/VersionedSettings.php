@@ -12,7 +12,7 @@ final class VersionedSettings
 
     public function current(string $section, array $defaults): array
     {
-        $latest = $this->cache[$section] ??= SettingVersion::query()->where('section', $section)->orderByDesc('version')->first()?->values ?? [];
+        $latest = $this->cache[$section] ??= SettingVersion::query()->where('section', $section)->orderByDesc('version')->first()->values ?? [];
 
         return [...$defaults, ...array_intersect_key($latest, $defaults)];
     }

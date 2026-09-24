@@ -14,7 +14,7 @@ final class ListAuditEventsRequest extends FormRequest
 {
     public function authorize(): Response
     {
-        return Gate::inspect('viewAny', AuditEvent::class);
+        return Gate::inspect($this->routeIs('audit.export') ? 'export' : 'viewAny', AuditEvent::class);
     }
 
     public function rules(): array

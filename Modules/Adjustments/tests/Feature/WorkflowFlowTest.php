@@ -121,9 +121,8 @@ it('refuses adjustment types that do not fit the exception', function (): void {
 });
 
 it('reflects a posted missing-posting correction in the next pull and re-run', function (): void {
-    [$saleResult] = seedLatePaymentScenario();
-    $store = app(MockSourceStore::class);
-    DB::table('mock_source_rows')->where('source', 'postings')->whereDate('record_date', '2026-09-22')->delete();
+    seedLatePaymentScenario();
+    unrelatedPostingOnly();
     $run = reconcile('2026-09-22', refresh: true);
     $exception = exceptionFor('TUP-S-480003');
     expect($exception->status->value)->toBe('MISSING_POSTING');
@@ -137,8 +136,8 @@ it('reflects a posted missing-posting correction in the next pull and re-run', f
 });
 
 it('flags an exception with an adjustment in flight when a re-run removes it', function (): void {
-    [$saleResult] = seedLatePaymentScenario();
-    DB::table('mock_source_rows')->where('source', 'postings')->whereDate('record_date', '2026-09-22')->delete();
+    seedLatePaymentScenario();
+    unrelatedPostingOnly();
     reconcile('2026-09-22', refresh: true);
     $exception = exceptionFor('TUP-S-480003');
     $this->actingAs(demoUser('analyst@demo'))->post(route('adjustments.store', $exception), ['type' => 'post_missing', 'amount' => '20.00', 'reason' => 'Pending']);
@@ -150,3 +149,10 @@ it('flags an exception with an adjustment in flight when a re-run removes it', f
 
     expect($exception->fresh()->needs_review)->toBeTrue()->and($exception->fresh()->state->value)->toBe('pending_approval');
 });
+
+function unrelatedPostingOnly(): void
+{
+    app(MockSourceStore::class)->replaceDay(SourceType::Postings, '2026-09-22', [
+        ['journal_id' => 'JNL-OTHER', 'posting_date' => '2026-09-22', 'transaction_id' => 'TUP-S-OTHER', 'account' => '4000-SALES-CASH', 'amount' => '5.00', 'currency' => 'USD', 'status' => 'POSTED'],
+    ]);
+}

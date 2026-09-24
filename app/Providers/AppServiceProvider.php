@@ -29,6 +29,7 @@ final class AppServiceProvider extends ServiceProvider
         Model::shouldBeStrict(! $this->app->isProduction());
         Model::unguard(false);
 
+        Gate::define('viewSettingsPage', [SettingsPolicy::class, 'viewPage']);
         Gate::define('viewSettings', [SettingsPolicy::class, 'view']);
         Gate::define('manageSettings', [SettingsPolicy::class, 'manage']);
 
