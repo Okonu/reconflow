@@ -54,7 +54,7 @@ $lines = [
     '| Metric | Value |',
     '|---|---|',
     "| Tests | {$totals['tests']} |",
-    "| Passed | ".($totals['tests'] - $totals['failed'] - $totals['skipped']).' |',
+    '| Passed | '.($totals['tests'] - $totals['failed'] - $totals['skipped']).' |',
     "| Failed | {$totals['failed']} |",
     "| Skipped | {$totals['skipped']} |",
     "| Assertions | {$assertions} |",
