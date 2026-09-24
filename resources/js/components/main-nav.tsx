@@ -9,6 +9,7 @@ const LINKS = [
     { label: 'Approvals', route: 'adjustments.index', permission: 'adjustments.view' },
     { label: 'Data uploads', route: 'ingestion.uploads.index', permission: 'uploads.view' },
     { label: 'Source batches', route: 'ingestion.batches.index', permission: 'batches.view' },
+    { label: 'AI oversight', route: 'ai.oversight', permission: 'ai.oversee' },
     { label: 'Audit log', route: 'audit.index', permission: 'audit.view' },
     { label: 'Users', route: 'users.index', permission: 'users.view' },
     { label: 'Roles', route: 'rbac.roles.index', permission: 'roles.view' },

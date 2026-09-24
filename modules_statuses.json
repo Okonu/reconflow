@@ -7,5 +7,6 @@
     "Reconciliation": true,
     "ExceptionManagement": true,
     "Adjustments": true,
-    "Notifications": true
+    "Notifications": true,
+    "AI": true
 }

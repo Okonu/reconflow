@@ -1,4 +1,5 @@
 import { Head, Link, usePoll } from '@inertiajs/react';
+import { RunNarrative } from '@modules/AI/resources/js/components/RunNarrative';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,6 +59,7 @@ export default function RunShow({ run: { data: run } }: { run: { data: ReconRun 
                 {run.blocked_reason && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">Blocked: {run.blocked_reason}.</p>}
                 {run.error && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">Failed: {run.error}</p>}
                 {run.status === 'completed' && <RunMetrics summary={run.summary} />}
+                {run.status === 'completed' && <RunNarrative runId={run.id} />}
                 <Card>
                     <CardHeader>
                         <CardTitle>Source data used</CardTitle>

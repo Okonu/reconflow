@@ -55,6 +55,26 @@ Running log of technical choices, simplifications and known limitations. Newest 
 | 10 | New permissions added by an upgrade | Granted automatically to the matching default template roles the first time they appear; roles edited at runtime keep their edits for existing permissions |
 | 11 | Slack and email content | Aggregates only (counts, amounts, dates, links). No phone numbers or customer identifiers leave the system |
 | 12 | Daily summary time | 07:00 Africa/Nairobi (`NOTIFY_DAILY_SUMMARY_TIME`), after the 06:00 reconciliation |
+| 13 | Default AI model | `claude-opus-5` (`ANTHROPIC_MODEL`), adaptive thinking at effort `medium` (`AI_EFFORT`), JSON-schema structured output, server-side refusal fallbacks on (`AI_REFUSAL_FALLBACKS`) |
+| 14 | What does the model see? | Triage sees one exception's records, with customers, payers and agents replaced by salted pseudonym tokens and a final PII scrub. Summaries see aggregates only. The exact redacted input is stored with each suggestion for audit |
+| 15 | What does accepting a suggestion do? | It records agreement on the timeline and in the audit log only. It never proposes an adjustment or changes state; the analyst still acts through the normal maker-checker flow |
+| 16 | Kill switch scope | Global and immediate for everyone, stored in the DB, and audited. Holders of `ai.manage` can toggle it (Finance Manager, Administrator by default) |
+| 17 | Demo without an API key | The panels show "No Anthropic API key is configured". `AI_DRIVER=stub` swaps in a clearly labelled rule-based stub (model name `stub-rules`) for offline demos and eval baselines |
+
+## Phase 5: AI assist
+
+### What exists
+- **`Modules/AI`:** an `LlmClient` contract with `ClaudeClient` (official `anthropic-ai/sdk`, beta messages with `fallbacks: 'default'`, adaptive thinking, JSON-schema output, typed error handling, cached system prompt) and `StubLlmClient`.
+- **Redaction:** `Redactor` pseudonymises personal fields, then scrubs the whole payload.
+- **Versioned prompts:** `resources/prompts/v1_triage.md` and `v1_run_summary.md`. Each suggestion stores the version and SHA-256 of its prompt.
+- **Triage:** suggests a likely cause (enum), a next action (enum), an explanation, evidence and a confidence. People accept it, or override it with a reason and an optional alternative action. Both are logged on the exception timeline and in the audit log.
+- **Run narrative:** a summary built from aggregates only, shown on the run detail page.
+- **Oversight page (`/ai`):** kill switch, usage and acceptance/override rates, latency, tokens, fallback use, the override list with reasons, evaluation runs and recent requests.
+- **Eval set:** `resources/evals/triage_v1.json` has 12 labelled cases. `php artisan reconflow:ai-eval [--stub]` scores action and cause accuracy and stores the run.
+- **Retention:** `reconflow:ai-prune` deletes AI logs older than `RETENTION_AI_LOGS_MONTHS` (12) daily and audits the deletion.
+
+### Deferred until all phases are done
+- Tests for the AI module (stub-driven), the eval baseline run, and permission contract entries for `ai.*` routes.
 
 ## Phase 4: Workflow
 

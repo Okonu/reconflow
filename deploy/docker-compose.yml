@@ -39,8 +39,13 @@ x-app: &app
     DEMO_DAYS: ${DEMO_DAYS:-14}
     DEMO_SALES_PER_DAY: ${DEMO_SALES_PER_DAY:-3000}
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-5}
+    ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5}
     AI_ENABLED: ${AI_ENABLED:-true}
+    AI_DRIVER: ${AI_DRIVER:-claude}
+    AI_EFFORT: ${AI_EFFORT:-medium}
+    NOTIFY_MAIL_ENABLED: ${NOTIFY_MAIL_ENABLED:-false}
+    NOTIFY_DAILY_SUMMARY_TIME: ${NOTIFY_DAILY_SUMMARY_TIME:-07:00}
+    SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
   volumes:
     - audit_archive:/data/audit-archive
     - app_storage:/app/storage/app

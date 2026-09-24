@@ -19,4 +19,5 @@ parameters:
         - Modules/ExceptionManagement/database/migrations
         - Modules/Adjustments/database/migrations
         - Modules/Notifications/database/migrations
+        - Modules/AI/database/migrations
     treatPhpDocTypesAsCertain: false
