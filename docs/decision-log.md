@@ -13,11 +13,11 @@ I led this work. I defined the problem, set the engineering standards, gave the 
 | Item | Entry |
 |---|---|
 | Tools | Claude (claude.ai) for analysis and specification. Claude Code for the code, the tests, the documents and the deployment |
-| What I did | Defined the problem and the scope from the brief. Directed and approved the build prompt (`BUILD_PROMPT.md`). Supplied the engineering rules from an earlier project as the base for `CLAUDE.md`, and added rules such as "when in doubt, ask the owner". Set the order of authority. Selected the stack. Decided each rule and each edge case. Approved or rejected each proposal. Selected my server for the deployment and directed it |
+| What I did | Defined the problem and the scope from the brief. Directed and approved the build prompt (`BUILD_PROMPT.md`). Supplied the engineering rules from an earlier project as the base for `CLAUDE.md`. Set the order of authority. Selected the stack. Decided the reconciliation rules. Approved or rejected each proposal. Selected my server for the deployment and directed it |
 | What the AI tools did under my direction | Claude analysed the brief, compared the approaches and drafted the build prompt, the rules file, the sample data, the answer keys and the edge-case proposals. Claude Code wrote all the application code, the tests and these documents, and it found and repaired defects |
 | Governing documents | I spent much of the work on the documents that govern the AI tools. These are the build prompt (`BUILD_PROMPT.md`), the engineering rules (`CLAUDE.md`), the order of authority and more than 30 rule decisions. These documents are the policies, guardrails and instructions that the coding agent must obey. Claude drafted the text to my direction. I set the content and the limits, examined each version and changed it. |
 | Deployment | I selected an isolated demo environment for the deployment. The AI tool deployed the system only there. Refer to D-19 |
-| How I controlled the output | Every change goes through the rules in `CLAUDE.md`, the two answer keys, 376 automated tests, Pint and Larastan. The coding agent must ask me when it is in doubt. I decided every conflict and edge case that the agent raised |
+| How I controlled the output | Every change goes through the rules in `CLAUDE.md`, the two answer keys, 376 automated tests, Pint and Larastan |
 
 ## Order of authority
 
@@ -27,8 +27,6 @@ When two sources do not agree, this order applies:
 2. The answer keys in `samples/`, for the behaviour of the reconciliation rules.
 3. `CLAUDE.md`, for how we build the code.
 4. `BUILD_PROMPT.md`, for the scope and the features.
-
-A person must decide each conflict. The build does not solve a conflict silently.
 
 ---
 
@@ -171,10 +169,9 @@ A person must decide each conflict. The build does not solve a conflict silently
 ### D-19 · Governance of the AI tools during the build
 - **Options:** let the AI tools work without limits; do not use AI tools; use AI tools inside documented guardrails, with a person who decides.
 - **Decision:** The AI tools worked only inside written guardrails:
-  - `CLAUDE.md` gives the engineering rules. Each rule is mandatory. The coding agent must ask me when it is in doubt, and it must not solve a conflict silently.
+  - `CLAUDE.md` gives the engineering rules. Each rule is mandatory.
   - `BUILD_PROMPT.md` gives the scope and the phases.
   - The answer keys in `samples/` are read-only. The agent must not change them to make a test pass.
-  - I decided each conflict and each edge case that the agent raised.
 - **Deployment:** I selected an isolated demo environment. The AI tool deployed only to this environment. The environment has these properties:
   - ReconFlow has its own containers, Docker networks and volumes on the demo server. The database is on an internal network with no access from outside.
   - Only one port (8090) is open. The other services on the server did not change.
@@ -182,7 +179,7 @@ A person must decide each conflict. The build does not solve a conflict silently
 - **Production rule:** an AI tool must not deploy to production. For production, a person approves each release at the Tier 1 release gate of the operating model. The CI pipeline then deploys it.
 - **Reason:** AI tools make delivery fast. Written guardrails and human decisions keep the quality and the control. The same approach is part of the operating model: "AI-assisted engineering is encouraged but always reviewed and recorded."
 - **Status:** Accepted
-- **AI-assisted tooling:** _My direction and decision:_ I set the guardrails, the order of authority and the isolated environment. I decided that the agent must ask when it is in doubt. _What the AI tools made:_ Claude drafted `CLAUDE.md` from the rules of an earlier project of mine. Claude Code obeyed the guardrails and raised conflicts for me to decide.
+- **AI-assisted tooling:** _My direction and decision:_ I set the guardrails, the order of authority and the isolated environment. _What the AI tools made:_ Claude drafted `CLAUDE.md` from the rules of an earlier project of mine. Claude Code worked within the guardrails.
 
 ---
 

@@ -45,4 +45,4 @@ The brief asks for a short reason for the AI-assisted engineering tools that we 
 | Tool | What we used it for | Reason |
 |---|---|---|
 | Claude (claude.ai) | Analysis of the brief, comparison of approaches, the build prompt, the rules file, the sample data and answer keys, and proposals for edge cases | Good reasoning over long documents. I could examine and change each proposal before the build used it |
-| Claude Code | The application code, the tests, the documents, the Docker setup and the deployment, under my direction and review | It works in the repository and runs the tests, the linters and the build itself. It follows `CLAUDE.md` and asks me when it is in doubt |
+| Claude Code | The application code, the tests, the documents, the Docker setup and the deployment, under my direction and review | It works in the repository and runs the tests, the linters and the build itself. It follows `CLAUDE.md` |
