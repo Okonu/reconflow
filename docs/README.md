@@ -20,7 +20,7 @@ We wrote these documents in ASD-STE100 Simplified Technical English (STE). We us
 | [Business case](business-case.md) | See the value, the costs, the rollout plan and the measures of success |
 | [Decision log](decision-log.md) | See each important decision, the options, the reason and the use of AI tools |
 | [Technology choices](technology-choices.md) | See why we selected each technology |
-| [Architecture](architecture.md) | See the parts of the system and the daily data flow |
+| [Architecture](architecture.md) | See the application structure, the layers, the coding principles, the parts of the system and the daily data flow |
 | [Reconciliation rules](reconciliation-rules.md) | See how the system matches sales, payments and ERP postings |
 | [Assumptions](assumptions.md) | See what we assumed and the scope limits |
 | [Data model](data-model.md) | See the tables and the relations between them |

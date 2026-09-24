@@ -13,7 +13,7 @@ I led this work. I defined the problem, set the engineering standards, gave the 
 | Item | Entry |
 |---|---|
 | Tools | Claude (claude.ai) for analysis and specification. Claude Code for the code, the tests, the documents and the deployment |
-| What I did | Defined the problem and the scope from the brief. Directed and approved the build prompt (`BUILD_PROMPT.md`). Supplied the engineering rules from an earlier project as the base for `CLAUDE.md`. Set the order of authority. Selected the stack. Decided the reconciliation rules. Approved or rejected each proposal. Selected my server for the deployment and directed it |
+| What I did | Defined the problem and the scope from the brief. Directed and approved the build prompt (`BUILD_PROMPT.md`). Supplied the engineering rules from an earlier project as the base for `CLAUDE.md`. Set the architecture of the application: one module for each business function, the layers in each module, the frontend structure, the coding principles and the code style (refer to [Architecture](architecture.md#application-structure)). Set the order of authority. Selected the stack. Decided the reconciliation rules. Approved or rejected each proposal. Selected my server for the deployment and directed it |
 | What the AI tools did under my direction | Claude analysed the brief, compared the approaches and drafted the build prompt, the rules file, the sample data, the answer keys and the edge-case proposals. Claude Code wrote all the application code, the tests and these documents, and it found and repaired defects |
 | Governing documents | I spent much of the work on the documents that govern the AI tools. These are the build prompt (`BUILD_PROMPT.md`), the engineering rules (`CLAUDE.md`), the order of authority and more than 30 rule decisions. These documents are the policies, guardrails and instructions that the coding agent must obey. Claude drafted the text to my direction. I set the content and the limits, examined each version and changed it. |
 | Deployment | I selected an isolated demo environment for the deployment. The AI tool deployed the system only there. Refer to D-19 |
@@ -180,6 +180,14 @@ When two sources do not agree, this order applies:
 - **Reason:** AI tools make delivery fast. Written guardrails and human decisions keep the quality and the control. The same approach is part of the operating model: "AI-assisted engineering is encouraged but always reviewed and recorded."
 - **Status:** Accepted
 - **AI-assisted tooling:** _My direction and decision:_ I set the guardrails, the order of authority and the isolated environment. _What the AI tools made:_ Claude drafted `CLAUDE.md` from the rules of an earlier project of mine. Claude Code worked within the guardrails.
+
+### D-20 · Application architecture and coding standards
+- **Options:** a standard Laravel project with no extra structure; microservices; a modular monolith with strict layers.
+- **Decision:** A modular monolith. There is one module for each business function, with the same layers in each module: thin controllers, Form Requests, Policies, Actions, Services, DTOs, Enums, API Resources and Models. A small shared kernel is in the root `app/` folder. The frontend has pages, hooks and UI-only components. [Architecture](architecture.md#application-structure) gives the layout, the coding principles and the code style.
+- **Reason:** Each business function can change without an effect on the others. Each layer has one responsibility, so the code is easy to test and to hand over. The financial logic stays on the server, where the tests and controls apply.
+- **Trade-off:** More files and more structure than a small project needs. Architecture tests and linters keep the structure consistent.
+- **Status:** Accepted
+- **AI-assisted tooling:** _My direction and decision:_ I set the architecture: the modular monolith, the module list, the layers in each module, the shared kernel, permissions-first access control, the frontend rules and the code style (strict types, no comments, enums, a 200-line limit for components). These came from the engineering rules of an earlier project of mine, which I adapted for this system. _What the AI tools made:_ Claude wrote these rules into `CLAUDE.md`. Claude Code built the code in this structure and added architecture tests that enforce it.
 
 ---
 

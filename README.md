@@ -121,7 +121,7 @@ The documents are in ASD-STE100 Simplified Technical English. [docs/README.md](d
 | [Business case](docs/business-case.md) | Value, costs, rollout plan and measures of success |
 | [Decision log](docs/decision-log.md) | Decisions, options, reasons and the use of AI tools |
 | [Technology choices](docs/technology-choices.md) | The reason for each technology |
-| [Architecture](docs/architecture.md) | Components, data flow and design decisions |
+| [Architecture](docs/architecture.md) | Application structure, layers, coding principles, components and data flow |
 | [Reconciliation rules](docs/reconciliation-rules.md) | Each rule in plain language, with examples |
 | [Assumptions](docs/assumptions.md) | Business assumptions and scope limits |
 | [Data model](docs/data-model.md) | The entity diagram and the tables |

@@ -57,6 +57,116 @@ The modules communicate through events and contracts. They do not call the contr
 
 For example, the Adjustments and AI modules add panels to the exception page. The ExceptionManagement module does not know about these modules.
 
+## Application structure
+
+I set this structure before the build started. The coding agent had to follow it for all code.
+
+### Repository layout
+
+```text
+reconflow/
+├── app/                      Shared technical kernel. It contains no business logic
+│   ├── Casts/                MoneyCast (BigDecimal, no floats)
+│   ├── Contracts/            Interfaces that modules use to communicate
+│   ├── Http/                 Base controller, middleware (request ID, security headers)
+│   ├── Policies/             Shared policies (settings)
+│   └── Support/              Money, business calendar, versioned settings, exports
+├── Modules/                  One module for each business function
+│   ├── Users/  Rbac/  Audit/  DataProtection/
+│   ├── Ingestion/  Reconciliation/  ExceptionManagement/  Adjustments/
+│   └── AI/  Notifications/  Dashboard/
+├── resources/js/             Shared frontend: layouts, UI components, hooks, lib, types
+├── tests/                    Architecture tests and shared tests
+├── samples/                  Templates, golden and volume data, answer keys (read-only)
+├── deploy/                   Caddyfile, entrypoint, example settings
+└── docs/                     This documentation
+```
+
+### Inside each module
+
+Each module has the same layout. For example, `Modules/Adjustments/`:
+
+```text
+Modules/Adjustments/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/      Thin: validate, authorise, call an Action, return a Resource
+│   │   ├── Requests/         Form Requests: all input validation. They give DTOs to the domain
+│   │   └── Resources/        API Resources: all response shapes, including masking
+│   ├── Actions/              One state change for each class. Owns the transaction and the audit event
+│   ├── Services/             Domain logic that two or more Actions use
+│   ├── DTOs/                 Read-only typed data between the layers
+│   ├── Enums/                Statuses, states, categories and permissions. No magic strings
+│   ├── Policies/             All authorisation: permissions and rules such as maker ≠ checker
+│   ├── Models/               Eloquent models, casts, relations and query scopes
+│   ├── Contracts/  Jobs/  Support/
+├── resources/js/
+│   ├── Pages/                Inertia pages: compose components and hooks only
+│   ├── components/           UI only: render and handle events
+│   └── types.ts              Prop types that agree with the Resources
+├── routes/  database/  config/
+└── tests/                    Pest tests for this module
+```
+
+### Request flow through the layers
+
+```mermaid
+flowchart LR
+    Page[Inertia page<br/>React] -->|router / useForm| Route
+    Route --> Controller
+    Controller --> Request[Form Request<br/>validates, makes DTO]
+    Controller --> Policy[Policy<br/>checks permission]
+    Controller --> Action[Action<br/>transaction + audit]
+    Action --> Service[Service<br/>domain logic]
+    Service --> Model[Model / scope]
+    Action --> Audit[AuditLogger]
+    Controller --> Resource[API Resource<br/>shapes and masks]
+    Resource -->|props| Page
+```
+
+### Coding principles
+
+**Backend**
+
+- Controllers are thin. A Form Request validates. A Policy authorises. An Action or a Service does the work. An API Resource shapes the response.
+- Each state change is one Action. The Action owns the database transaction and records the audit event through `AuditLogger`.
+- The matching rules are pure classes. They use no database, network, clock or random values. Thus the same input always gives the same output.
+- Money is `decimal(14,2)` in PostgreSQL and `BigDecimal` in PHP. Code never uses floating-point numbers for money.
+- Policies check permissions, never role names.
+- Modules communicate through Actions, Services, DTOs, Events and Contracts. A module never calls the controller of a different module.
+- Only `Modules/Ingestion/Connectors` communicates with source systems.
+- All AI calls go through `ClaudeClient`. The `Redactor` processes each payload first.
+
+**Frontend**
+
+- Components show data and handle events only. They contain no business logic, no data fetching and no money calculations.
+- The server calculates all amounts, variances, totals and rates. The frontend only formats them for display (`resources/js/lib/format.ts`).
+- All page data comes as Inertia props from Resources. Writes go through the Inertia `router` or `useForm`. The few JSON calls go through one client, `resources/js/lib/http.ts`.
+- The frontend can hide a button with the `can` flags from the server. The server always enforces the permission.
+- A component has a maximum of 200 lines. If a component is longer, split it.
+
+**Code style**
+
+- Each PHP file declares `strict_types=1`.
+- Names give the intent. The code contains no comments and no docblocks. Explanations go in `docs/`.
+- Statuses, states and permissions are enums, not strings.
+- Pint sets the PHP style. Larastan checks the types. ESLint and the TypeScript compiler check the frontend.
+- If logic occurs two times, move it to a shared Service, hook, library function or component.
+
+### How the build enforces the structure
+
+| Rule | Check |
+|---|---|
+| Each class declares strict types | Architecture test |
+| `env()` is only in configuration files | Architecture test |
+| Controllers do not query the database | Architecture test |
+| No comments or docblocks in PHP | Architecture test |
+| No authorisation by role name | Architecture test |
+| Each server-rendered page has a page component | Architecture test |
+| Each route needs its permission | Permission contract test |
+| PHP style and types | Pint and Larastan in CI |
+| Frontend types and style | TypeScript compiler and ESLint in CI |
+
 ## Daily data flow
 
 ```mermaid
