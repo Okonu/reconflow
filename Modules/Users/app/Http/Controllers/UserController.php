@@ -15,6 +15,7 @@ use Modules\Users\Http\Requests\StoreUserRequest;
 use Modules\Users\Http\Requests\UpdateUserRequest;
 use Modules\Users\Http\Resources\UserResource;
 use Modules\Users\Models\User;
+use Spatie\Permission\Models\Role;
 
 final class UserController extends Controller
 {
@@ -24,7 +25,11 @@ final class UserController extends Controller
 
         return Inertia::render('Users/Index', [
             'users' => UserResource::collection(User::query()->with('roles')->orderBy('email')->get()),
-            'can' => ['create' => $request->user()?->can('create', User::class) ?? false],
+            'roles' => Role::query()->orderBy('name')->get(['id', 'name', 'label'])->map(fn (Role $r): array => ['id' => $r->getKey(), 'label' => (string) ($r->getAttribute('label') ?? $r->name)])->all(),
+            'can' => [
+                'create' => $request->user()?->can('create', User::class) ?? false,
+                'assign_roles' => $request->user()?->can('roles.manage') ?? false,
+            ],
         ]);
     }
 

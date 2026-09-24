@@ -37,6 +37,7 @@ final class SuggestionRecorder
             'prompt_version' => $prompt['version'],
             'prompt_hash' => $prompt['hash'],
             'input' => $context,
+            'input_hash' => hash('sha256', json_encode($context, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)),
             ...$links,
         ];
 

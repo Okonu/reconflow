@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\AI\Providers;
 
 use App\Contracts\ExceptionDetailContributor;
+use App\Contracts\SettingsSection;
 use App\Support\Authorization\PermissionRegistry;
 use App\Support\Modules\ModuleProvider;
 use Illuminate\Console\Scheduling\Schedule;
@@ -18,6 +19,7 @@ use Modules\AI\Policies\AiSuggestionPolicy;
 use Modules\AI\Services\ClaudeClient;
 use Modules\AI\Services\StubLlmClient;
 use Modules\AI\Support\AiContribution;
+use Modules\AI\Support\AiSettingsSection;
 use Modules\AI\Support\Demo\AiTables;
 use Modules\Ingestion\Actions\ResetDemoData;
 
@@ -45,6 +47,7 @@ final class AIServiceProvider extends ModuleProvider
             : $app->make(ClaudeClient::class));
         $this->app->tag([AiContribution::class], ExceptionDetailContributor::TAG);
         $this->app->tag([AiTables::class], ResetDemoData::RESETTER_TAG);
+        $this->app->tag([AiSettingsSection::class], SettingsSection::TAG);
     }
 
     public function boot(): void

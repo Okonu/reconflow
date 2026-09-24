@@ -24,7 +24,7 @@ it('logs in, shares permissions with the frontend and audits the login', functio
 
     $this->assertAuthenticatedAs(demoUser('analyst@demo'));
     $this->get(route('home'))->assertInertia(fn (Assert $page) => $page
-        ->component('Home')
+        ->component('Dashboard/Index')
         ->where('auth.user.email', 'analyst@demo')
         ->where('auth.user.roles', ['Recon Analyst'])
         ->where('auth.permissions', fn ($permissions) => collect($permissions)->contains('audit.view'))

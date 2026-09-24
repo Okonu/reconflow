@@ -17,9 +17,11 @@ final class ClaudeClient implements LlmClient
 {
     private ?Client $client = null;
 
+    public function __construct(private readonly AiConfig $config) {}
+
     public function name(): string
     {
-        return (string) config('ai.model');
+        return $this->config->model();
     }
 
     public function available(): bool
@@ -38,10 +40,10 @@ final class ClaudeClient implements LlmClient
             $message = $this->client()->beta->messages->create(
                 maxTokens: (int) config('ai.max_tokens'),
                 messages: [['role' => 'user', 'content' => $request->userContent()]],
-                model: (string) config('ai.model'),
+                model: $this->config->model(),
                 fallbacks: $fallbacks ? 'default' : null,
                 outputConfig: [
-                    'effort' => (string) config('ai.effort'),
+                    'effort' => $this->config->effort(),
                     'format' => ['type' => 'json_schema', 'schema' => $request->schema],
                 ],
                 system: [['type' => 'text', 'text' => $request->system, 'cacheControl' => ['type' => 'ephemeral']]],

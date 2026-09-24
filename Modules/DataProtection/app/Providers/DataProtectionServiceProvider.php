@@ -6,7 +6,9 @@ namespace Modules\DataProtection\Providers;
 
 use App\Support\Authorization\PermissionRegistry;
 use App\Support\Modules\ModuleProvider;
+use Illuminate\Support\Facades\Gate;
 use Modules\DataProtection\Enums\DataProtectionPermission;
+use Modules\DataProtection\Policies\PersonalDataPolicy;
 use Modules\DataProtection\Services\Pseudonymiser;
 
 final class DataProtectionServiceProvider extends ModuleProvider
@@ -29,6 +31,8 @@ final class DataProtectionServiceProvider extends ModuleProvider
     public function boot(): void
     {
         parent::boot();
+
+        Gate::define('unmaskPersonalData', [PersonalDataPolicy::class, 'unmask']);
 
         $this->app->make(PermissionRegistry::class)->register(DataProtectionPermission::class);
     }

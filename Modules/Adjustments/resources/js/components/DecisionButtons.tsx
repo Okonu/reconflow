@@ -25,7 +25,14 @@ export function DecisionButtons({ adjustment }: { adjustment: AdjustmentRow }) {
         return null;
     }
     if (!adjustment.can.approve && !adjustment.can.reject) {
-        return adjustment.why_not ? <p className="text-xs text-muted-foreground">{adjustment.why_not}</p> : null;
+        return adjustment.why_not ? (
+            <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" disabled>
+                    Approve and post
+                </Button>
+                <p className="text-xs text-destructive">{adjustment.why_not}</p>
+            </div>
+        ) : null;
     }
 
     return (

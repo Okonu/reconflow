@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\ExceptionManagement\Providers;
 
 use App\Contracts\BusinessDateLock;
+use App\Contracts\SettingsSection;
 use App\Http\Controllers\System\MetricsController;
 use App\Support\Authorization\PermissionRegistry;
 use App\Support\Modules\ModuleProvider;
@@ -21,6 +22,7 @@ use Modules\ExceptionManagement\Policies\ExceptionPolicy;
 use Modules\ExceptionManagement\Policies\RunSignoffPolicy;
 use Modules\ExceptionManagement\Support\Demo\ExceptionTables;
 use Modules\ExceptionManagement\Support\SignoffDateLock;
+use Modules\ExceptionManagement\Support\WorkflowSettingsSection;
 use Modules\Ingestion\Actions\ResetDemoData;
 use Modules\Reconciliation\Events\FuzzyMatchRejected;
 use Modules\Reconciliation\Events\ItemStateChanged;
@@ -43,6 +45,7 @@ final class ExceptionManagementServiceProvider extends ModuleProvider
         $this->app->bind(BusinessDateLock::class, SignoffDateLock::class);
         $this->app->tag([ExceptionMetrics::class], MetricsController::COLLECTOR_TAG);
         $this->app->tag([ExceptionTables::class], ResetDemoData::RESETTER_TAG);
+        $this->app->tag([WorkflowSettingsSection::class], SettingsSection::TAG);
     }
 
     public function boot(): void

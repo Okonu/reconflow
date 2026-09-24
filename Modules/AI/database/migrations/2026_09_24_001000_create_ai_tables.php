@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('prompt_version', 16);
             $table->char('prompt_hash', 64);
             $table->jsonb('input');
+            $table->char('input_hash', 64);
             $table->jsonb('output')->nullable();
             $table->string('error', 500)->nullable();
             $table->boolean('served_by_fallback')->default(false);

@@ -10,11 +10,14 @@ use Illuminate\Foundation\Auth\User;
 use Modules\Adjustments\Enums\AdjustmentType;
 use Modules\Adjustments\Http\Resources\AdjustmentResource;
 use Modules\Adjustments\Models\Adjustment;
+use Modules\Adjustments\Services\ApprovalSettings;
 use Modules\ExceptionManagement\Enums\ExceptionState;
 use Modules\ExceptionManagement\Models\ReconException;
 
 final class AdjustmentsContribution implements ExceptionDetailContributor
 {
+    public function __construct(private readonly ApprovalSettings $approvals) {}
+
     public function key(): string
     {
         return 'adjustments';
@@ -30,7 +33,7 @@ final class AdjustmentsContribution implements ExceptionDetailContributor
             'items' => AdjustmentResource::collection(Adjustment::query()->with(['proposer', 'decider'])->where('exception_id', $exception->id)->latest('id')->get())->resolve(request()),
             'types' => array_map(fn (AdjustmentType $t) => ['value' => $t->value, 'label' => $t->label()], $types),
             'suggested_amount' => (string) $exception->amount_at_risk,
-            'threshold' => (string) config('adjustments.approval_threshold'),
+            'threshold' => (string) $this->approvals->threshold(),
             'can_propose' => $types !== [] && in_array($exception->state, [ExceptionState::Open, ExceptionState::InReview], true) && $viewer->can('propose', Adjustment::class),
         ];
     }

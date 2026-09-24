@@ -8,5 +8,6 @@
     "ExceptionManagement": true,
     "Adjustments": true,
     "Notifications": true,
-    "AI": true
+    "AI": true,
+    "Dashboard": true
 }

@@ -33,4 +33,14 @@ final class ReconRunPolicy
     {
         return $this->permit($user, ReconPermission::ViewResults);
     }
+
+    public function export(User $user): Response
+    {
+        return $this->permit($user, ReconPermission::ExportResults);
+    }
+
+    public function exportUnmasked(User $user): Response
+    {
+        return $this->permit($user, ReconPermission::ExportResultsUnmasked);
+    }
 }

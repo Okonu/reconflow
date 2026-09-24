@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::middleware('auth')->group(function (): void {
-    Route::get('/', fn () => Inertia::render('Home'))->name('home');
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::put('/settings/{section}', [SettingsController::class, 'update'])->name('settings.update');
 });

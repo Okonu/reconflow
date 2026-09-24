@@ -24,6 +24,7 @@ jobs:
           --health-cmd "pg_isready -U reconflow -d reconflow_test"
           --health-interval 5s --health-timeout 3s --health-retries 20
     env:
+      HAS_ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
       DB_HOST: 127.0.0.1
       DB_PORT: "5432"
       DB_USERNAME: reconflow
@@ -73,6 +74,12 @@ jobs:
 
       - name: Performance (50k sales under 60s)
         run: ./vendor/bin/pest --group=slow
+
+      - name: AI eval (only when an Anthropic key is configured)
+        if: ${{ env.HAS_ANTHROPIC_KEY == 'true' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: php artisan migrate --force && php artisan reconflow:ai-eval
 
       - uses: actions/upload-artifact@v4
         with:

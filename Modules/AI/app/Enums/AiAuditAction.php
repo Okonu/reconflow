@@ -12,5 +12,6 @@ enum AiAuditAction: string
     case SuggestionOverridden = 'ai.suggestion_overridden';
     case KillSwitchToggled = 'ai.kill_switch_toggled';
     case EvalRun = 'ai.eval_run';
+    case SettingsChanged = 'settings.ai_changed';
     case LogsPruned = 'ai.logs_pruned';
 }

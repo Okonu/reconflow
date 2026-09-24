@@ -60,6 +60,29 @@ Running log of technical choices, simplifications and known limitations. Newest 
 | 15 | What does accepting a suggestion do? | It records agreement on the timeline and in the audit log only. It never proposes an adjustment or changes state; the analyst still acts through the normal maker-checker flow |
 | 16 | Kill switch scope | Global and immediate for everyone, stored in the DB, and audited. Holders of `ai.manage` can toggle it (Finance Manager, Administrator by default) |
 | 17 | Demo without an API key | The panels show "No Anthropic API key is configured". `AI_DRIVER=stub` swaps in a clearly labelled rule-based stub (model name `stub-rules`) for offline demos and eval baselines |
+| 18 | Where settings live | A shared, versioned `setting_versions` store in root `app/`. Each module contributes a settings section (rules, severity/SLA, approval threshold, AI). Matching rules keep their own `recon_rule_configs` versions. Every save needs a reason and is audited by the owning module |
+| 19 | Who changes settings | `config.view` / `config.manage` (Administrator by default) for rules, severity/SLA and approvals; `ai.oversee` / `ai.manage` for the AI section |
+| 20 | "Time saved vs manual baseline" | Auto-matched sale items × 3.4 s each (`DASHBOARD_MANUAL_SECONDS_PER_ITEM`), about 2h 45m on a 3,000-sale day. The baseline needs confirming with Finance |
+| 21 | Report "Status" column | Shows the roll-up (Match / Variance / Exception…), with the detailed status and rule beside it. The detailed status reflects later human decisions (for example a rejected fuzzy match shows MISSING_PAYMENT, "was MATCHED_FUZZY") |
+| 22 | Unmasking | Masked by default everywhere. Holders of `pii.unmask` (Analyst, Manager) can reveal one record's phone numbers with a stated purpose; each reveal is audited. Unmasked report exports need `results.export_unmasked` (Manager) and a reason |
+| 23 | AI eval set location | `Modules/AI/resources/evals/triage_v1.json` (20 cases) instead of `tests/fixtures`, because the Docker image strips test folders and the eval must be runnable in production. CI runs it only when the `ANTHROPIC_API_KEY` secret is set; tests always use `AI_DRIVER=stub` |
+| 24 | AI decisions and the exception timeline | The AI module writes only to `ai_suggestions` (governance rule). Decisions appear in the AI panel, on the oversight page and in the audit log, not on the exception timeline |
+| 25 | Self-approval message | The segregation-of-duties check runs before the permission check, so a proposer always sees "someone else must approve", and the approve button is shown disabled with that reason |
+
+## Phase 6: Pages and demo flow
+
+### What exists
+- **Dashboard (`Modules/Dashboard`, home):** KPI tiles (match rate, value reconciled, value at variance, open, overdue, time saved), a 14-day match-rate and exception trend, open exceptions by category, ageing buckets, and a latest-run card (DQ per source, sign-off state, pending fuzzy matches and approvals).
+- **Reconciliation report:** the brief's table with roll-up chips, section/status/detailed-status filters, search and pagination. CSV/XLSX export is masked, formula-safe and audited; unmasked export needs a reason.
+- **Settings:** versioned, audited sections for matching rules, severity/SLA bands, approval threshold, and AI (on/off, model, effort, accountable owner, last review date).
+- **Audit log:** filters, payload and hash details, CSV export (audited), and Verify integrity.
+- **Users:** create, edit, deactivate and assign roles. **Roles:** create and edit with grouped permissions, and delete unused roles.
+- **AI oversight additions:** average confidence, failure rate, override rate by category, accountable owner and last review date.
+- **Data protection:** audited per-record unmask on exception detail.
+- **Navigation:** moved to a second header row.
+
+### Deferred until all phases are done
+- Tests for the dashboard, report export (masking, formula escaping, audit), settings (validation, versioning, audit), unmask, audit export, and the users/roles UI flows. Also permission contract entries for all new routes.
 
 ## Phase 5: AI assist
 

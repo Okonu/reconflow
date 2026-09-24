@@ -37,6 +37,16 @@ final class OversightStats
             'input_tokens' => (int) (clone $all)->sum('input_tokens'),
             'output_tokens' => (int) (clone $all)->sum('output_tokens'),
             'fallback_served' => (clone $all)->where('served_by_fallback', true)->count(),
+            'avg_confidence' => ($confidence = (clone $triage)->whereNotNull('output')->selectRaw("avg((output->>'confidence')::numeric) as c")->value('c')) === null ? null : round((float) $confidence * 100, 1),
+            'failure_rate' => array_sum($byStatus) === 0 ? null : round(($byStatus[SuggestionStatus::Failed->value] ?? 0) * 100 / array_sum($byStatus), 1),
+            'by_category' => (clone $triage)
+                ->selectRaw("input->'exception'->>'category' as category, count(*) filter (where status = 'accepted') as accepted, count(*) filter (where status = 'overridden') as overridden")
+                ->groupByRaw("input->'exception'->>'category'")->get()
+                ->map(fn ($row): array => [
+                    'category' => (string) $row->getAttribute('category'),
+                    'accepted' => (int) $row->getAttribute('accepted'),
+                    'overridden' => (int) $row->getAttribute('overridden'),
+                ])->all(),
         ];
     }
 

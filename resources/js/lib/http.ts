@@ -38,3 +38,32 @@ export async function http<T>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', url: 
     }
     return payload as T;
 }
+
+export async function downloadPost(url: string, body: unknown): Promise<void> {
+    const response = await fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            Accept: 'application/octet-stream, application/json',
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-XSRF-TOKEN': csrfToken(),
+            'X-Request-ID': requestId(),
+        },
+        body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        const error = payload?.error ?? {};
+        const firstValidation = payload?.errors ? Object.values(payload.errors as Record<string, string[]>)[0]?.[0] : undefined;
+        throw new HttpError(response.status, error.code ?? 'error', firstValidation ?? error.message ?? payload?.message ?? response.statusText, response.headers.get('X-Request-ID'));
+    }
+    const disposition = response.headers.get('Content-Disposition') ?? '';
+    const filename = disposition.match(/filename="?([^";]+)"?/)?.[1] ?? 'download';
+    const blob = await response.blob();
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+}

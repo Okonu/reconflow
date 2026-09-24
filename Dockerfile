@@ -11,6 +11,7 @@ COPY Modules/ExceptionManagement/composer.json Modules/ExceptionManagement/compo
 COPY Modules/Adjustments/composer.json Modules/Adjustments/composer.json
 COPY Modules/Notifications/composer.json Modules/Notifications/composer.json
 COPY Modules/AI/composer.json Modules/AI/composer.json
+COPY Modules/Dashboard/composer.json Modules/Dashboard/composer.json
 RUN composer install --no-dev --no-interaction --no-progress --no-scripts --no-autoloader --prefer-dist --ignore-platform-reqs
 
 FROM node:22-alpine AS assets

@@ -26,11 +26,6 @@ enum Severity: string
         return $this->rank() >= self::High->rank();
     }
 
-    public function slaHours(): int
-    {
-        return (int) config("exceptionmanagement.sla_hours.{$this->value}");
-    }
-
     public function label(): string
     {
         return ucfirst($this->value);

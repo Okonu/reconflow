@@ -13,6 +13,7 @@ enum ExceptionAuditAction: string
     case Relinked = 'exception.relinked';
     case Reclassified = 'exception.reclassified';
     case AutoResolved = 'exception.auto_resolved';
+    case SettingsChanged = 'settings.workflow_changed';
     case NeedsReview = 'exception.needs_review';
     case SignedOff = 'run.signed_off';
     case Reopened = 'run.reopened';

@@ -16,6 +16,7 @@ use Modules\AI\Enums\SuggestionKind;
 use Modules\AI\Http\Requests\DecideSuggestionRequest;
 use Modules\AI\Http\Resources\AiSuggestionResource;
 use Modules\AI\Models\AiSuggestion;
+use Modules\AI\Services\AiConfig;
 use Modules\AI\Services\AiSettings;
 use Modules\AI\Services\AiUnavailable;
 use Modules\AI\Services\NarrativeService;
@@ -76,12 +77,13 @@ final class AiController extends Controller
         return response()->json(['summary' => (new AiSuggestionResource($summary))->resolve($request)], 201);
     }
 
-    public function oversight(Request $request, OversightStats $stats, AiSettings $settings): Response
+    public function oversight(Request $request, OversightStats $stats, AiSettings $settings, AiConfig $config): Response
     {
         $this->authorize('oversee', AiSuggestion::class);
 
         return Inertia::render('AI/Oversight/Index', [
             'status' => $settings->status(),
+            'accountability' => array_intersect_key($config->all(), array_flip(['owner_role', 'last_review_date'])),
             'stats' => $stats->summary(),
             'overrides' => AiSuggestionResource::collection($stats->recentOverrides()),
             'recent' => AiSuggestionResource::collection($stats->recent()),

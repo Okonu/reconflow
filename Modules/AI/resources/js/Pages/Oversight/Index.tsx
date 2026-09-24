@@ -15,6 +15,9 @@ interface Stats {
     input_tokens: number;
     output_tokens: number;
     fallback_served: number;
+    avg_confidence: number | null;
+    failure_rate: number | null;
+    by_category: { category: string; accepted: number; overridden: number }[];
 }
 
 interface EvalRun {
@@ -31,6 +34,7 @@ interface EvalRun {
 
 interface Props {
     status: AiStatus;
+    accountability: { owner_role: string; last_review_date: string };
     stats: Stats;
     overrides: { data: AiSuggestion[] };
     recent: { data: AiSuggestion[] };
@@ -69,7 +73,7 @@ function Subject({ s }: { s: AiSuggestion }) {
     return <span>—</span>;
 }
 
-export default function AiOversight({ status, stats, overrides, recent, evals, prompt_version, retention_months, can }: Props) {
+export default function AiOversight({ status, accountability, stats, overrides, recent, evals, prompt_version, retention_months, can }: Props) {
     return (
         <AppLayout>
             <Head title="AI oversight" />
@@ -90,19 +94,51 @@ export default function AiOversight({ status, stats, overrides, recent, evals, p
                 <Alert variant={status.enabled ? 'default' : 'destructive'}>
                     <AlertDescription>
                         {status.enabled ? 'The AI assistant is on.' : status.reason}
-                        {status.toggled_by && ` Last toggled by ${status.toggled_by} ${formatDateTime(status.toggled_at)}.`}
+                        {status.toggled_by && ` Last toggled by ${status.toggled_by} ${formatDateTime(status.toggled_at)}.`} Accountable owner: {accountability.owner_role}. Last review:{' '}
+                        {accountability.last_review_date || 'not recorded'}.
                     </AlertDescription>
                 </Alert>
 
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <Tile label={`Triage (${stats.days}d)`} value={stats.triage.total} />
                     <Tile label="Accepted" value={stats.triage.accepted} />
                     <Tile label="Overridden" value={stats.triage.overridden} />
                     <Tile label="Acceptance rate" value={stats.triage.acceptance_rate === null ? '—' : `${stats.triage.acceptance_rate}%`} />
-                    <Tile label="Failed" value={stats.triage.failed} />
+                    <Tile label="Avg confidence" value={stats.avg_confidence === null ? '—' : `${stats.avg_confidence}%`} />
+                    <Tile label="Failure rate" value={stats.failure_rate === null ? '—' : `${stats.failure_rate}%`} />
                     <Tile label="Avg latency" value={`${(stats.avg_latency_ms / 1000).toFixed(1)} s`} />
                     <Tile label="Tokens in / out" value={`${stats.input_tokens.toLocaleString()} / ${stats.output_tokens.toLocaleString()}`} />
                 </div>
+
+                {stats.by_category.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Decisions by exception category</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Category</TableHead>
+                                        <TableHead>Accepted</TableHead>
+                                        <TableHead>Overridden</TableHead>
+                                        <TableHead>Override rate</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {stats.by_category.map((c) => (
+                                        <TableRow key={c.category}>
+                                            <TableCell>{c.category || '—'}</TableCell>
+                                            <TableCell>{c.accepted}</TableCell>
+                                            <TableCell>{c.overridden}</TableCell>
+                                            <TableCell>{c.accepted + c.overridden === 0 ? '—' : `${Math.round((c.overridden * 100) / (c.accepted + c.overridden))}%`}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                )}
 
                 <Card>
                     <CardHeader>

@@ -11,5 +11,6 @@ enum AdjustmentAuditAction: string
     case Rejected = 'adjustment.rejected';
     case Posted = 'adjustment.posted';
     case PostingFailed = 'adjustment.posting_failed';
+    case SettingsChanged = 'settings.approvals_changed';
     case ErpFailureToggled = 'erp.failure_simulation_toggled';
 }

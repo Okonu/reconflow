@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Adjustments\Providers;
 
 use App\Contracts\ExceptionDetailContributor;
+use App\Contracts\SettingsSection;
 use App\Support\Authorization\PermissionRegistry;
 use App\Support\Modules\ModuleProvider;
 use Illuminate\Support\Facades\Gate;
@@ -15,6 +16,7 @@ use Modules\Adjustments\Policies\AdjustmentPolicy;
 use Modules\Adjustments\Services\HttpMockErpClient;
 use Modules\Adjustments\Services\LocalMockErpClient;
 use Modules\Adjustments\Support\AdjustmentsContribution;
+use Modules\Adjustments\Support\ApprovalSettingsSection;
 use Modules\Adjustments\Support\Demo\AdjustmentTables;
 use Modules\Ingestion\Actions\ResetDemoData;
 
@@ -37,6 +39,7 @@ final class AdjustmentsServiceProvider extends ModuleProvider
             : $app->make(LocalMockErpClient::class));
         $this->app->tag([AdjustmentsContribution::class], ExceptionDetailContributor::TAG);
         $this->app->tag([AdjustmentTables::class], ResetDemoData::RESETTER_TAG);
+        $this->app->tag([ApprovalSettingsSection::class], SettingsSection::TAG);
     }
 
     public function boot(): void

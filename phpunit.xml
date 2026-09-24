@@ -51,6 +51,9 @@
         <env name="SEED_DEMO_USERS" value="true" force="true"/>
         <env name="LOGIN_MAX_ATTEMPTS" value="5" force="true"/>
         <env name="SOURCE_SYSTEMS_DRIVER" value="local" force="true"/>
+        <env name="AI_DRIVER" value="stub" force="true"/>
+        <env name="ANTHROPIC_API_KEY" value="" force="true"/>
+        <env name="SLACK_WEBHOOK_URL" value="" force="true"/>
         <env name="SOURCE_SYSTEMS_TOKEN" value="test-source-token" force="true"/>
         <env name="SOURCE_SYSTEMS_URL" value="http://sources.test" force="true"/>
         <env name="DEMO_AUTO_SEED" value="false" force="true"/>

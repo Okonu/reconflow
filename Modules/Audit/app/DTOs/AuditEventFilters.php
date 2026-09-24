@@ -25,7 +25,7 @@ final readonly class AuditEventFilters
             'entity_id' => $this->entityId,
             'actor' => $this->actor,
             'from' => $this->from?->toDateString(),
-            'to' => $this->to?->toDateString(),
+            'to' => $this->to?->subDay()->toDateString(),
         ];
     }
 }

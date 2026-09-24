@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Reconciliation\Providers;
 
+use App\Contracts\SettingsSection;
 use App\Http\Controllers\System\MetricsController;
 use App\Support\Authorization\PermissionRegistry;
 use App\Support\BusinessCalendar;
@@ -24,6 +25,7 @@ use Modules\Reconciliation\Policies\ReconResultPolicy;
 use Modules\Reconciliation\Policies\ReconRunPolicy;
 use Modules\Reconciliation\Services\RuleConfigService;
 use Modules\Reconciliation\Support\Demo\ReconciliationTables;
+use Modules\Reconciliation\Support\RuleSettingsSection;
 use Throwable;
 
 final class ReconciliationServiceProvider extends ModuleProvider
@@ -47,6 +49,7 @@ final class ReconciliationServiceProvider extends ModuleProvider
 
         $this->app->tag([ReconciliationMetrics::class], MetricsController::COLLECTOR_TAG);
         $this->app->tag([ReconciliationTables::class], ResetDemoData::RESETTER_TAG);
+        $this->app->tag([RuleSettingsSection::class], SettingsSection::TAG);
     }
 
     public function boot(): void

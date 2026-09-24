@@ -14,6 +14,8 @@ use Modules\Reconciliation\Models\ReconResult;
 
 final class ExceptionClassifier
 {
+    public function __construct(private readonly WorkflowSettings $settings) {}
+
     public function category(ReconStatus $status, array $flags = []): ExceptionCategory
     {
         return match ($status) {
@@ -45,7 +47,7 @@ final class ExceptionClassifier
         if ($status === ReconStatus::PendingTiming) {
             return Severity::Low;
         }
-        $bands = (array) config('exceptionmanagement.severity');
+        $bands = $this->settings->bands();
         $severity = match (true) {
             $valueAtRisk->isGreaterThanOrEqualTo((string) $bands['critical_from']) => Severity::Critical,
             $valueAtRisk->isGreaterThanOrEqualTo((string) $bands['high_from']) => Severity::High,
@@ -59,6 +61,6 @@ final class ExceptionClassifier
 
     public function dueAt(ReconStatus $status, Severity $severity, CarbonImmutable $from): ?CarbonImmutable
     {
-        return $status === ReconStatus::PendingTiming ? null : $from->addHours($severity->slaHours());
+        return $status === ReconStatus::PendingTiming ? null : $from->addHours($this->settings->slaHours($severity));
     }
 }

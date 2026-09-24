@@ -8,4 +8,5 @@ enum AuditAction: string
 {
     case ChainVerified = 'audit.verified';
     case ArchiveRun = 'retention.audit_archive';
+    case Exported = 'audit.exported';
 }

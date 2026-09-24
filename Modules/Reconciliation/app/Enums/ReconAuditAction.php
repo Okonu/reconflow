@@ -19,4 +19,5 @@ enum ReconAuditAction: string
     case ManualMatchConfirmed = 'match.manual_confirmed';
     case FuzzyMatchConfirmed = 'match.fuzzy_confirmed';
     case FuzzyMatchRejected = 'match.fuzzy_rejected';
+    case ReportExported = 'report.exported';
 }

@@ -13,6 +13,7 @@ use Modules\Adjustments\Enums\AdjustmentAuditAction;
 use Modules\Adjustments\Enums\AdjustmentState;
 use Modules\Adjustments\Enums\AdjustmentType;
 use Modules\Adjustments\Models\Adjustment;
+use Modules\Adjustments\Services\ApprovalSettings;
 use Modules\Adjustments\Services\JournalBuilder;
 use Modules\Audit\Services\AuditLogger;
 use Modules\ExceptionManagement\Enums\ExceptionState;
@@ -26,6 +27,7 @@ final class ProposeAdjustment
         private readonly JournalBuilder $journals,
         private readonly ExceptionWorkflow $workflow,
         private readonly AuditLogger $audit,
+        private readonly ApprovalSettings $approvals,
     ) {}
 
     public function handle(User $user, ReconException $exception, AdjustmentProposal $proposal): Adjustment
@@ -50,7 +52,7 @@ final class ProposeAdjustment
                 'reason' => $proposal->reason,
                 'proposed_by' => $user->id,
                 'state' => AdjustmentState::PendingApproval,
-                'high_value' => $amount->isGreaterThan(Money::of((string) config('adjustments.approval_threshold'))),
+                'high_value' => $amount->isGreaterThan($this->approvals->threshold()),
                 'idempotency_key' => (string) Str::uuid(),
                 'journal' => $this->journals->build($proposal->type, $exception, $amount),
             ]);

@@ -62,8 +62,10 @@ export interface ResultDetail {
     run_version: number | null;
 }
 
+export type SourceRecord = Record<string, string | number | null>;
+
 export interface SourceRecordSet {
-    sale: Record<string, string | null> | null;
-    payments: Record<string, string | null>[];
-    postings: Record<string, string | null>[];
+    sale: SourceRecord | null;
+    payments: SourceRecord[];
+    postings: SourceRecord[];
 }

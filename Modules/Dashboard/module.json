@@ -1,0 +1,11 @@
+{
+    "name": "Dashboard",
+    "alias": "dashboard",
+    "description": "ReconFlow Dashboard module",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Dashboard\\Providers\\DashboardServiceProvider"
+    ],
+    "files": []
+}

@@ -685,5 +685,467 @@
         "match_manually"
       ]
     }
+  },
+  {
+    "id": "eval-13",
+    "context": {
+      "exception": {
+        "business_date": "2026-09-22",
+        "status": "VARIANCE",
+        "category": "",
+        "severity": "medium",
+        "amount_at_risk": "0.80",
+        "carried_forward": false
+      },
+      "result": {
+        "rule_id": "",
+        "rule_explanation": "",
+        "expected_amount": "32.00",
+        "received_amount": "31.20",
+        "posted_amount": "32.00",
+        "variance": "-0.80",
+        "flags": [],
+        "tag": null
+      },
+      "sale": {
+        "transaction_id": "TUP-S-EVAL01",
+        "sold_at": "2026-09-22T10:00:00+03:00",
+        "region": "Coast",
+        "product_sku": "SOLAR-LAMP-S1",
+        "expected_amount": "32.00",
+        "payment_reference": "TUP-S-EVAL01",
+        "customer": "CUST-a1b2c3",
+        "agent": "AGENT-9f8e7d"
+      },
+      "payments": [
+        {
+          "payment_id": "SEV01",
+          "paid_at": "2026-09-22T11:00:00+03:00",
+          "channel": "MOBILE_MONEY",
+          "amount": "31.20",
+          "reference": "TUP-S-EVAL01",
+          "payer": "CUST-a1b2c3"
+        }
+      ],
+      "erp_postings": [
+        {
+          "journal_id": "JNL-01",
+          "posting_date": "2026-09-22",
+          "account": "4000-SALES-CASH",
+          "amount": "32.00",
+          "status": "POSTED"
+        }
+      ]
+    },
+    "expected": {
+      "likely_cause": [
+        "customer_underpaid"
+      ],
+      "recommended_action": [
+        "write_off",
+        "contact_customer"
+      ]
+    }
+  },
+  {
+    "id": "eval-14",
+    "context": {
+      "exception": {
+        "business_date": "2026-09-22",
+        "status": "UNMATCHED_PAYMENT",
+        "category": "",
+        "severity": "medium",
+        "amount_at_risk": "28.00",
+        "carried_forward": false
+      },
+      "result": {
+        "rule_id": "",
+        "rule_explanation": "",
+        "expected_amount": null,
+        "received_amount": "28.00",
+        "posted_amount": null,
+        "variance": null,
+        "flags": [],
+        "tag": null
+      },
+      "sale": null,
+      "payments": [
+        {
+          "payment_id": "SEV11",
+          "paid_at": "2026-09-22T11:00:00+03:00",
+          "channel": "CASH",
+          "amount": "28.00",
+          "reference": null,
+          "payer": "CUST-a1b2c3"
+        }
+      ],
+      "erp_postings": []
+    },
+    "expected": {
+      "likely_cause": [
+        "payment_without_reference",
+        "unidentified_receipt"
+      ],
+      "recommended_action": [
+        "match_manually",
+        "investigate"
+      ]
+    }
+  },
+  {
+    "id": "eval-15",
+    "context": {
+      "exception": {
+        "business_date": "2026-09-22",
+        "status": "UNMATCHED_PAYMENT",
+        "category": "",
+        "severity": "critical",
+        "amount_at_risk": "2500.00",
+        "carried_forward": false
+      },
+      "result": {
+        "rule_id": "",
+        "rule_explanation": "",
+        "expected_amount": null,
+        "received_amount": "55.00",
+        "posted_amount": null,
+        "variance": null,
+        "flags": [],
+        "tag": null
+      },
+      "sale": null,
+      "payments": [
+        {
+          "payment_id": "SEV05",
+          "paid_at": "2026-09-22T11:00:00+03:00",
+          "channel": "BANK",
+          "amount": "2500.00",
+          "reference": "ACC 7781",
+          "payer": "CUST-zz9911"
+        }
+      ],
+      "erp_postings": []
+    },
+    "expected": {
+      "likely_cause": [
+        "unidentified_receipt",
+        "payment_without_reference"
+      ],
+      "recommended_action": [
+        "move_to_suspense",
+        "investigate"
+      ]
+    }
+  },
+  {
+    "id": "eval-16",
+    "context": {
+      "exception": {
+        "business_date": "2026-09-22",
+        "status": "POSTING_MISMATCH",
+        "category": "",
+        "severity": "medium",
+        "amount_at_risk": "60.00",
+        "carried_forward": false
+      },
+      "result": {
+        "rule_id": "",
+        "rule_explanation": "",
+        "expected_amount": "60.00",
+        "received_amount": "60.00",
+        "posted_amount": "6.00",
+        "variance": "0.00",
+        "flags": [],
+        "tag": null
+      },
+      "sale": {
+        "transaction_id": "TUP-S-EVAL07",
+        "sold_at": "2026-09-22T10:00:00+03:00",
+        "region": "Coast",
+        "product_sku": "SOLAR-LAMP-S1",
+        "expected_amount": "60.00",
+        "payment_reference": "TUP-S-EVAL07",
+        "customer": "CUST-a1b2c3",
+        "agent": "AGENT-9f8e7d"
+      },
+      "payments": [
+        {
+          "payment_id": "SEV07",
+          "paid_at": "2026-09-22T11:00:00+03:00",
+          "channel": "MOBILE_MONEY",
+          "amount": "60.00",
+          "reference": "TUP-S-EVAL07",
+          "payer": "CUST-a1b2c3"
+        }
+      ],
+      "erp_postings": [
+        {
+          "journal_id": "JNL-07",
+          "posting_date": "2026-09-22",
+          "account": "4000-SALES-CASH",
+          "amount": "6.00",
+          "status": "POSTED"
+        }
+      ]
+    },
+    "expected": {
+      "likely_cause": [
+        "erp_posting_wrong_amount",
+        "data_quality"
+      ],
+      "recommended_action": [
+        "correct_posting",
+        "investigate"
+      ]
+    }
+  },
+  {
+    "id": "eval-17",
+    "context": {
+      "exception": {
+        "business_date": "2026-09-22",
+        "status": "PENDING_TIMING",
+        "category": "",
+        "severity": "medium",
+        "amount_at_risk": "28.00",
+        "carried_forward": true
+      },
+      "result": {
+        "rule_id": "",
+        "rule_explanation": "",
+        "expected_amount": "28.00",
+        "received_amount": null,
+        "posted_amount": "28.00",
+        "variance": null,
+        "flags": [],
+        "tag": null
+      },
+      "sale": {
+        "transaction_id": "TUP-S-EVAL04",
+        "sold_at": "2026-09-22T23:40:00+03:00",
+        "region": "Coast",
+        "product_sku": "SOLAR-LAMP-S1",
+        "expected_amount": "28.00",
+        "payment_reference": "TUP-S-EVAL04",
+        "customer": "CUST-a1b2c3",
+        "agent": "AGENT-9f8e7d"
+      },
+      "payments": [],
+      "erp_postings": [
+        {
+          "journal_id": "JNL-04",
+          "posting_date": "2026-09-22",
+          "account": "4000-SALES-CASH",
+          "amount": "28.00",
+          "status": "POSTED"
+        }
+      ]
+    },
+    "expected": {
+      "likely_cause": [
+        "timing_difference",
+        "payment_not_yet_received"
+      ],
+      "recommended_action": [
+        "wait_for_payment"
+      ]
+    }
+  },
+  {
+    "id": "eval-18",
+    "context": {
+      "exception": {
+        "business_date": "2026-09-22",
+        "status": "DUPLICATE_PAYMENT",
+        "category": "",
+        "severity": "medium",
+        "amount_at_risk": "20.0",
+        "carried_forward": false
+      },
+      "result": {
+        "rule_id": "",
+        "rule_explanation": "",
+        "expected_amount": "20.00",
+        "received_amount": "40.00",
+        "posted_amount": "20.00",
+        "variance": "20.00",
+        "flags": [],
+        "tag": null
+      },
+      "sale": {
+        "transaction_id": "TUP-S-EVAL06",
+        "sold_at": "2026-09-22T10:00:00+03:00",
+        "region": "Coast",
+        "product_sku": "SOLAR-LAMP-S1",
+        "expected_amount": "20.00",
+        "payment_reference": "TUP-S-EVAL06",
+        "customer": "CUST-a1b2c3",
+        "agent": "AGENT-9f8e7d"
+      },
+      "payments": [
+        {
+          "payment_id": "SEV06A",
+          "paid_at": "2026-09-22T11:00:00+03:00",
+          "channel": "MOBILE_MONEY",
+          "amount": "20.00",
+          "reference": "TUP-S-EVAL06",
+          "payer": "CUST-a1b2c3"
+        },
+        {
+          "payment_id": "SEV06B",
+          "paid_at": "2026-09-22T11:03:00+03:00",
+          "channel": "BANK",
+          "amount": "20.00",
+          "reference": "TUP-S-EVAL06",
+          "payer": "CUST-a1b2c3"
+        }
+      ],
+      "erp_postings": [
+        {
+          "journal_id": "JNL-06",
+          "posting_date": "2026-09-22",
+          "account": "4000-SALES-CASH",
+          "amount": "20.00",
+          "status": "POSTED"
+        }
+      ]
+    },
+    "expected": {
+      "likely_cause": [
+        "duplicate_payment"
+      ],
+      "recommended_action": [
+        "refund",
+        "investigate"
+      ]
+    }
+  },
+  {
+    "id": "eval-19",
+    "context": {
+      "exception": {
+        "business_date": "2026-09-22",
+        "status": "VARIANCE",
+        "category": "",
+        "severity": "medium",
+        "amount_at_risk": "5.0",
+        "carried_forward": false
+      },
+      "result": {
+        "rule_id": "",
+        "rule_explanation": "",
+        "expected_amount": "40.00",
+        "received_amount": "52.00",
+        "posted_amount": "40.00",
+        "variance": "12.00",
+        "flags": [],
+        "tag": null
+      },
+      "sale": {
+        "transaction_id": "TUP-S-EVAL02",
+        "sold_at": "2026-09-22T10:00:00+03:00",
+        "region": "Coast",
+        "product_sku": "SOLAR-LAMP-S1",
+        "expected_amount": "40.00",
+        "payment_reference": "TUP-S-EVAL02",
+        "customer": "CUST-a1b2c3",
+        "agent": "AGENT-9f8e7d"
+      },
+      "payments": [
+        {
+          "payment_id": "SEV02",
+          "paid_at": "2026-09-22T11:00:00+03:00",
+          "channel": "MOBILE_MONEY",
+          "amount": "52.00",
+          "reference": "TUP-S-EVAL02",
+          "payer": "CUST-a1b2c3"
+        }
+      ],
+      "erp_postings": [
+        {
+          "journal_id": "JNL-02",
+          "posting_date": "2026-09-22",
+          "account": "4000-SALES-CASH",
+          "amount": "40.00",
+          "status": "POSTED"
+        }
+      ]
+    },
+    "expected": {
+      "likely_cause": [
+        "customer_overpaid"
+      ],
+      "recommended_action": [
+        "refund",
+        "contact_customer"
+      ]
+    }
+  },
+  {
+    "id": "eval-20",
+    "context": {
+      "exception": {
+        "business_date": "2026-09-22",
+        "status": "DUPLICATE_POSTING",
+        "category": "",
+        "severity": "medium",
+        "amount_at_risk": "35.00",
+        "carried_forward": false
+      },
+      "result": {
+        "rule_id": "",
+        "rule_explanation": "",
+        "expected_amount": "35.00",
+        "received_amount": "35.00",
+        "posted_amount": "70.00",
+        "variance": "0.00",
+        "flags": [],
+        "tag": null
+      },
+      "sale": {
+        "transaction_id": "TUP-S-EVAL09",
+        "sold_at": "2026-09-22T10:00:00+03:00",
+        "region": "Coast",
+        "product_sku": "SOLAR-LAMP-S1",
+        "expected_amount": "35.00",
+        "payment_reference": "TUP-S-EVAL09",
+        "customer": "CUST-a1b2c3",
+        "agent": "AGENT-9f8e7d"
+      },
+      "payments": [
+        {
+          "payment_id": "SEV09",
+          "paid_at": "2026-09-22T11:00:00+03:00",
+          "channel": "MOBILE_MONEY",
+          "amount": "35.00",
+          "reference": "TUP-S-EVAL09",
+          "payer": "CUST-a1b2c3"
+        }
+      ],
+      "erp_postings": [
+        {
+          "journal_id": "JNL-20A",
+          "posting_date": "2026-09-22",
+          "account": "4000-SALES-CASH",
+          "amount": "35.00",
+          "status": "POSTED"
+        },
+        {
+          "journal_id": "JNL-20B",
+          "posting_date": "2026-09-23",
+          "account": "4000-SALES-CASH",
+          "amount": "35.00",
+          "status": "POSTED"
+        }
+      ]
+    },
+    "expected": {
+      "likely_cause": [
+        "duplicate_erp_posting"
+      ],
+      "recommended_action": [
+        "reverse_duplicate_posting"
+      ]
+    }
   }
 ]

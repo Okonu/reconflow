@@ -26,7 +26,7 @@ final class SourceRecords
             : PostingRecord::query()->where('batch_id', $postingBatch)->where('transaction_id', $result->transaction_id)->orderBy('id')->get();
 
         return [
-            'sale' => $sale === null ? null : PersonalData::maskRecord('sales', [
+            'sale' => $sale === null ? null : ['_id' => $sale->id, ...PersonalData::maskRecord('sales', [
                 'transaction_id' => $sale->transaction_id,
                 'timestamp' => $sale->sold_at?->toIso8601String(),
                 'agent_id' => $sale->agent_id,
@@ -35,15 +35,15 @@ final class SourceRecords
                 'product_sku' => $sale->product_sku,
                 'expected_amount' => (string) $sale->expected_amount,
                 'payment_reference' => $sale->payment_reference,
-            ]),
-            'payments' => $payments->map(fn (PaymentRecord $p) => PersonalData::maskRecord('payments', [
+            ])],
+            'payments' => $payments->map(fn (PaymentRecord $p) => ['_id' => $p->id, ...PersonalData::maskRecord('payments', [
                 'payment_id' => $p->payment_id,
                 'timestamp' => $p->paid_at?->toIso8601String(),
                 'channel' => $p->channel,
                 'payer_phone' => $p->payer_phone,
                 'amount' => (string) $p->amount,
                 'reference' => $p->reference,
-            ]))->all(),
+            ])])->all(),
             'postings' => $postings->map(fn (PostingRecord $p) => [
                 'journal_id' => $p->journal_id,
                 'posting_date' => $p->posting_date?->toDateString(),
