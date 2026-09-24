@@ -1,5 +1,8 @@
 x-app: &app
   image: ${APP_IMAGE:-reconflow:local}
+  build:
+    context: .
+    dockerfile: Dockerfile
   restart: unless-stopped
   depends_on:
     db:
@@ -7,47 +10,51 @@ x-app: &app
   environment: &app-env
     APP_ENV: production
     APP_DEBUG: "false"
-    APP_KEY: ${APP_KEY:?set APP_KEY}
-    APP_URL: https://${DOMAIN:-localhost}${PUBLIC_PORT_SUFFIX:-}
+    APP_NAME: ReconFlow
+    APP_KEY: ${APP_KEY:-}
+    APP_URL: ${APP_URL:-http://localhost:8080}
     DB_CONNECTION: pgsql
     DB_HOST: db
     DB_PORT: "5432"
     DB_DATABASE: reconflow
     DB_USERNAME: reconflow
-    DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    DB_PASSWORD: ${POSTGRES_PASSWORD:-reconflow}
     SESSION_DRIVER: database
     SESSION_LIFETIME: ${SESSION_LIFETIME:-30}
     SESSION_ENCRYPT: "true"
-    SESSION_SECURE_COOKIE: "true"
+    SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
     SESSION_SAME_SITE: strict
     CACHE_STORE: database
     QUEUE_CONNECTION: database
     HASH_DRIVER: argon2id
     LOG_CHANNEL: json
     LOG_LEVEL: ${LOG_LEVEL:-info}
-    TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.16.0.0/12}
-    PII_HASH_SALT: ${PII_HASH_SALT:?set PII_HASH_SALT}
-    DEMO_PASSWORD: ${DEMO_PASSWORD:-}
+    TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.16.0.0/12,192.168.0.0/16,10.0.0.0/8}
+    PII_HASH_SALT: ${PII_HASH_SALT:-}
+    DEMO_PASSWORD: ${DEMO_PASSWORD:-ReconFlow2026}
     SEED_DEMO_USERS: ${SEED_DEMO_USERS:-true}
     RETENTION_TRANSACTIONS_YEARS: ${RETENTION_TRANSACTIONS_YEARS:-7}
     RETENTION_AI_LOGS_MONTHS: ${RETENTION_AI_LOGS_MONTHS:-12}
     RETENTION_AUDIT_YEARS: ${RETENTION_AUDIT_YEARS:-7}
     SOURCE_SYSTEMS_DRIVER: http
     SOURCE_SYSTEMS_URL: http://app:8000
-    SOURCE_SYSTEMS_TOKEN: ${SOURCE_SYSTEMS_TOKEN:?set SOURCE_SYSTEMS_TOKEN}
+    SOURCE_SYSTEMS_TOKEN: ${SOURCE_SYSTEMS_TOKEN:-}
     DEMO_AUTO_SEED: ${DEMO_AUTO_SEED:-true}
     DEMO_DAYS: ${DEMO_DAYS:-14}
     DEMO_SALES_PER_DAY: ${DEMO_SALES_PER_DAY:-3000}
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5}
     AI_ENABLED: ${AI_ENABLED:-true}
-    AI_DRIVER: ${AI_DRIVER:-claude}
+    AI_DRIVER: ${AI_DRIVER:-}
     AI_EFFORT: ${AI_EFFORT:-medium}
+    AI_REFUSAL_FALLBACKS: ${AI_REFUSAL_FALLBACKS:-true}
+    CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
     NOTIFY_MAIL_ENABLED: ${NOTIFY_MAIL_ENABLED:-false}
     NOTIFY_DAILY_SUMMARY_TIME: ${NOTIFY_DAILY_SUMMARY_TIME:-07:00}
     SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
   volumes:
     - audit_archive:/data/audit-archive
+    - app_secrets:/data/secrets
     - app_storage:/app/storage/app
 
 services:
@@ -57,7 +64,7 @@ services:
     environment:
       POSTGRES_DB: reconflow
       POSTGRES_USER: reconflow
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-reconflow}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -69,9 +76,6 @@ services:
 
   app:
     <<: *app
-    build:
-      context: ..
-      dockerfile: Dockerfile
     environment:
       <<: *app-env
       RUN_MIGRATIONS: "true"
@@ -104,12 +108,12 @@ services:
       app:
         condition: service_healthy
     environment:
-      DOMAIN: ${DOMAIN:-localhost}
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
     ports:
-      - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
+      - "${HTTP_PORT:-8080}:80"
+      - "${HTTPS_PORT:-8443}:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     networks: [edge]
@@ -117,6 +121,7 @@ services:
 volumes:
   pgdata:
   audit_archive:
+  app_secrets:
   app_storage:
   caddy_data:
   caddy_config:

@@ -1,41 +1,16 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { formatDateTime } from '@/lib/format';
-import type { AiStatus, AiSuggestion } from '../../types';
-
-interface Stats {
-    days: number;
-    triage: { total: number; pending: number; accepted: number; overridden: number; failed: number; acceptance_rate: number | null };
-    summaries: number;
-    avg_latency_ms: number;
-    input_tokens: number;
-    output_tokens: number;
-    fallback_served: number;
-    avg_confidence: number | null;
-    failure_rate: number | null;
-    by_category: { category: string; accepted: number; overridden: number }[];
-}
-
-interface EvalRun {
-    id: number;
-    eval_set: string;
-    model: string;
-    prompt_version: string;
-    cases: number;
-    action_correct: number;
-    cause_correct: number;
-    errors: number;
-    created_at: string | null;
-}
+import { CategoryDecisionsTable, EvalRunsTable, OverridesTable, RecentRequestsTable } from '../../components/OversightTables';
+import type { AiStatus, AiSuggestion, EvalRun, OversightStats } from '../../types';
 
 interface Props {
     status: AiStatus;
     accountability: { owner_role: string; last_review_date: string };
-    stats: Stats;
+    stats: OversightStats;
     overrides: { data: AiSuggestion[] };
     recent: { data: AiSuggestion[] };
     evals: EvalRun[];
@@ -53,24 +28,6 @@ function Tile({ label, value }: { label: string; value: string | number }) {
             </CardContent>
         </Card>
     );
-}
-
-function Subject({ s }: { s: AiSuggestion }) {
-    if (s.exception_id) {
-        return (
-            <Link href={route('exceptions.show', s.exception_id)} className="text-primary hover:underline">
-                Exception #{s.exception_id}
-            </Link>
-        );
-    }
-    if (s.run_id) {
-        return (
-            <Link href={route('runs.show', s.run_id)} className="text-primary hover:underline">
-                Run #{s.run_id}
-            </Link>
-        );
-    }
-    return <span>—</span>;
 }
 
 export default function AiOversight({ status, accountability, stats, overrides, recent, evals, prompt_version, retention_months, can }: Props) {
@@ -110,151 +67,10 @@ export default function AiOversight({ status, accountability, stats, overrides, 
                     <Tile label="Tokens in / out" value={`${stats.input_tokens.toLocaleString()} / ${stats.output_tokens.toLocaleString()}`} />
                 </div>
 
-                {stats.by_category.length > 0 && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Decisions by exception category</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Category</TableHead>
-                                        <TableHead>Accepted</TableHead>
-                                        <TableHead>Overridden</TableHead>
-                                        <TableHead>Override rate</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {stats.by_category.map((c) => (
-                                        <TableRow key={c.category}>
-                                            <TableCell>{c.category || '—'}</TableCell>
-                                            <TableCell>{c.accepted}</TableCell>
-                                            <TableCell>{c.overridden}</TableCell>
-                                            <TableCell>{c.accepted + c.overridden === 0 ? '—' : `${Math.round((c.overridden * 100) / (c.accepted + c.overridden))}%`}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                )}
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Overrides</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {overrides.data.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">No overrides yet.</p>
-                        ) : (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Subject</TableHead>
-                                        <TableHead>AI suggested</TableHead>
-                                        <TableHead>Person chose</TableHead>
-                                        <TableHead>Reason</TableHead>
-                                        <TableHead>By</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {overrides.data.map((s) => (
-                                        <TableRow key={s.id}>
-                                            <TableCell>
-                                                <Subject s={s} />
-                                            </TableCell>
-                                            <TableCell>{s.recommended_action_label}</TableCell>
-                                            <TableCell>{s.override_action_label ?? '—'}</TableCell>
-                                            <TableCell className="max-w-sm">{s.decision_reason}</TableCell>
-                                            <TableCell className="whitespace-nowrap">
-                                                {s.decided_by} · {formatDateTime(s.decided_at)}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Evaluation runs</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {evals.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">
-                                No evaluation runs yet. Run <code className="rounded bg-muted px-1">php artisan reconflow:ai-eval</code>.
-                            </p>
-                        ) : (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>When</TableHead>
-                                        <TableHead>Set</TableHead>
-                                        <TableHead>Model / prompt</TableHead>
-                                        <TableHead>Action correct</TableHead>
-                                        <TableHead>Cause correct</TableHead>
-                                        <TableHead>Errors</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {evals.map((e) => (
-                                        <TableRow key={e.id}>
-                                            <TableCell>{formatDateTime(e.created_at)}</TableCell>
-                                            <TableCell>{e.eval_set}</TableCell>
-                                            <TableCell>
-                                                {e.model} / {e.prompt_version}
-                                            </TableCell>
-                                            <TableCell>
-                                                {e.action_correct}/{e.cases}
-                                            </TableCell>
-                                            <TableCell>
-                                                {e.cause_correct}/{e.cases}
-                                            </TableCell>
-                                            <TableCell>{e.errors}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Recent requests</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>When</TableHead>
-                                    <TableHead>Kind</TableHead>
-                                    <TableHead>Subject</TableHead>
-                                    <TableHead>Result</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Requested by</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {recent.data.map((s) => (
-                                    <TableRow key={s.id}>
-                                        <TableCell className="whitespace-nowrap">{formatDateTime(s.created_at)}</TableCell>
-                                        <TableCell>{s.kind === 'triage' ? 'Triage' : 'Run summary'}</TableCell>
-                                        <TableCell>
-                                            <Subject s={s} />
-                                        </TableCell>
-                                        <TableCell className="max-w-sm">{s.error ?? s.recommended_action_label ?? s.output.headline}</TableCell>
-                                        <TableCell>{s.status_label}</TableCell>
-                                        <TableCell>{s.requested_by}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
+                {stats.by_category.length > 0 && <CategoryDecisionsTable stats={stats} />}
+                <OverridesTable overrides={overrides.data} />
+                <EvalRunsTable evals={evals} />
+                <RecentRequestsTable recent={recent.data} />
             </div>
         </AppLayout>
     );

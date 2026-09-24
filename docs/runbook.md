@@ -3,7 +3,7 @@
 Commands assume the host checkout at `/opt/reconflow`, with this alias:
 
 ```bash
-alias dc='docker compose -f /opt/reconflow/deploy/docker-compose.yml --env-file /opt/reconflow/deploy/.env'
+alias dc='docker compose --project-directory /opt/reconflow --env-file /opt/reconflow/deploy/.env'
 ```
 
 Health: `GET /health` (process up) and `GET /ready` (database reachable). Metrics: `GET /metrics` (Prometheus; blocked at Caddy, scrape inside the network). Every response and log line carries an `X-Request-ID`; quote it when reporting a problem.

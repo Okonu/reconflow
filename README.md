@@ -10,21 +10,53 @@ Daily sales reconciliation for Tupande. ReconFlow pulls sales, payments and ERP 
 
 Laravel 13 (PHP 8.3) with function-specific modules, PostgreSQL 16, Inertia + React 19 + TypeScript + Tailwind + shadcn/ui, FrankenPHP behind Caddy, Docker Compose. The AI assistant uses the official Anthropic PHP SDK (Claude).
 
-## Quick start (Docker)
+## Run it (Docker, no configuration)
+
+You only need **Docker** (Docker Desktop on macOS/Windows, or Docker Engine with the Compose plugin on Linux). Nothing else is required: no PHP, Node, database setup or `.env` file.
 
 ```bash
-cp deploy/.env.example deploy/.env      # set APP_KEY, POSTGRES_PASSWORD, PII_HASH_SALT, DEMO_PASSWORD, SOURCE_SYSTEMS_TOKEN
-make up                                  # app + worker + scheduler + postgres + caddy
+git clone https://github.com/Okonu/reconflow.git
+cd reconflow
+docker compose up -d --build
 ```
 
-Open `https://localhost` (or your `HTTPS_PORT`). On first boot the app seeds 14 days of synthetic data (3,000 sales a day) and reconciles them, so the dashboard opens populated.
+Then open **http://localhost:8080** and sign in with any account below. The password is **`ReconFlow2026`**.
 
-AI is optional. Set `ANTHROPIC_API_KEY` to enable it, or `AI_DRIVER=stub` for an offline, clearly labelled rules stub. Without either, everything works rules-only.
+What happens on the first start:
 
-## Local development
+1. The image builds, which takes 3–6 minutes the first time and is cached afterwards.
+2. PostgreSQL starts. The app generates its own secrets (application key, pseudonymisation salt, source-system token) into a Docker volume, runs the migrations, and creates the roles and demo users.
+3. The page is usable as soon as `docker compose ps` shows `app` as **healthy**. A background worker then generates 14 days of synthetic data (3,000 sales a day) and reconciles every day. The dashboard shows "Preparing demo data…" and refreshes itself; this takes a few minutes.
+
+Useful commands:
+
+| Command | What it does |
+|---|---|
+| `docker compose ps` | Service status (`app` should be healthy) |
+| `docker compose logs -f app worker` | Follow the logs |
+| `docker compose down` | Stop (data is kept in Docker volumes) |
+| `docker compose down -v` | Stop and delete all data; the next `up` starts fresh |
+
+Docker Compose also reads a `.env` file in the project root if one exists (for example, from local development). Use `make up`, which ignores it, if you have one.
+
+Optional settings: copy `deploy/.env.example` to `deploy/.env`, change what you need, and run `docker compose --env-file deploy/.env up -d` (or `make up`). Common changes:
+
+| Setting | Default | When to change it |
+|---|---|---|
+| `HTTP_PORT` | `8080` | Port 8080 is already in use on your machine |
+| `APP_URL` | `http://localhost:8080` | Serving on another host or port (used in notification links) |
+| `ANTHROPIC_API_KEY` | empty | To use Claude for AI suggestions. Without a key, the AI panels use a clearly labelled offline rules stub, so every screen still works |
+| `DEMO_PASSWORD` | `ReconFlow2026` | Any shared or public deployment |
+| `SITE_ADDRESS`, `SESSION_SECURE_COOKIE` | `:80`, `false` | Real domain with HTTPS: set `SITE_ADDRESS=your.domain` and `SESSION_SECURE_COOKIE=true`; Caddy obtains the certificate |
+
+The stack runs five containers: `app` (web), `worker` (queue: reconciliation, postings, AI, notifications), `scheduler` (daily 06:00 run, summaries, retention), `db` (PostgreSQL 16, internal network only), and `caddy` (reverse proxy on port 8080). See [docs/deployment.md](docs/deployment.md) for servers, HTTPS, backups and upgrades.
+
+## Local development (without Docker)
+
+Requires PHP 8.3, Composer, Node 22 and PostgreSQL 16.
 
 ```bash
-cp .env.example .env && php artisan key:generate
+cp .env.example .env && php artisan key:generate   # then set the DB_* values
 make install
 make migrate seed
 make dev                                 # php artisan serve + queue worker + vite
@@ -32,7 +64,7 @@ make dev                                 # php artisan serve + queue worker + vi
 
 ## Demo logins
 
-Password: the value of `DEMO_PASSWORD`.
+Password: `ReconFlow2026` (the value of `DEMO_PASSWORD`).
 
 | Login | Seeded role | Can |
 |---|---|---|
@@ -60,7 +92,7 @@ Roles are templates made of permissions. Permissions can be changed and new role
 ## Quality
 
 ```bash
-make test      # Pest (unit, feature, architecture) + TypeScript check
+make test      # Pest (unit, feature, architecture) + TypeScript check (needs the local dev setup)
 make lint      # Pint + Larastan + ESLint
 php artisan reconflow:ai-eval --stub       # AI eval baseline (use without --stub when a key is set)
 ```

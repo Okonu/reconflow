@@ -9,8 +9,8 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { formatMoney } from '@/lib/format';
-import { downloadPost, HttpError } from '@/lib/http';
 import { RollUpChip } from '../../components/RollUpChip';
+import { UnmaskedExportPanel } from '../../components/UnmaskedExportPanel';
 
 interface Row {
     id: number;
@@ -51,26 +51,10 @@ interface Props {
 export default function ReportIndex({ filters, run, counts, rows, options, can }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [unmasking, setUnmasking] = useState(false);
-    const [reason, setReason] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [busy, setBusy] = useState(false);
 
     const apply = (changes: Partial<Filters> & { page?: number }) => router.get(route('reports.reconciliation'), { ...filters, ...changes }, { preserveState: true, preserveScroll: true });
     const exportUrl = (format: 'csv' | 'xlsx') => route('reports.reconciliation.export', { ...filters, format });
 
-    const exportUnmasked = async (format: 'csv' | 'xlsx') => {
-        setBusy(true);
-        setError(null);
-        try {
-            await downloadPost(route('reports.reconciliation.export-unmasked'), { ...filters, format, reason });
-            setUnmasking(false);
-            setReason('');
-        } catch (e) {
-            setError(e instanceof HttpError ? e.message : 'Export failed.');
-        } finally {
-            setBusy(false);
-        }
-    };
 
     return (
         <AppLayout>
@@ -101,23 +85,7 @@ export default function ReportIndex({ filters, run, counts, rows, options, can }
                     )}
                 </div>
 
-                {unmasking && (
-                    <Card className="border-amber-300">
-                        <CardContent className="space-y-3 pt-6">
-                            <p className="text-sm">Unmasked exports contain customer phone numbers. State why you need them; the export and your reason are written to the audit log.</p>
-                            <Input placeholder="Reason (at least 10 characters)" value={reason} onChange={(e) => setReason(e.target.value)} />
-                            {error && <p className="text-sm text-destructive">{error}</p>}
-                            <div className="flex gap-2">
-                                <Button size="sm" disabled={busy || reason.trim().length < 10} onClick={() => exportUnmasked('xlsx')}>
-                                    Download unmasked XLSX
-                                </Button>
-                                <Button size="sm" variant="outline" disabled={busy || reason.trim().length < 10} onClick={() => exportUnmasked('csv')}>
-                                    Download unmasked CSV
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
+                {unmasking && <UnmaskedExportPanel filters={filters} onDone={() => setUnmasking(false)} />}
 
                 <div className="flex flex-wrap items-center gap-3">
                     <Input type="date" aria-label="Business date" className="w-44" value={filters.date} onChange={(e) => e.target.value && apply({ date: e.target.value, page: 1 })} />

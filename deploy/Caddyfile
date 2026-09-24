@@ -1,4 +1,4 @@
-{$DOMAIN} {
+{$SITE_ADDRESS::80} {
 	encode zstd gzip
 
 	header {

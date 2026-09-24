@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'name' => 'AI',
     'enabled' => (bool) env('AI_ENABLED', true),
-    'driver' => env('AI_DRIVER', 'claude'),
+    'driver' => env('AI_DRIVER') ?: (filled(env('ANTHROPIC_API_KEY')) ? 'claude' : 'stub'),
     'api_key' => env('ANTHROPIC_API_KEY'),
     'model' => env('ANTHROPIC_MODEL', 'claude-opus-5'),
     'effort' => env('AI_EFFORT', 'medium'),

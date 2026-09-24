@@ -29,6 +29,7 @@ final class DashboardData
 
         return [
             'date' => $date,
+            'preparing' => (bool) config('ingestion.demo.auto_seed') && $run === null && DB::table('jobs')->exists(),
             'kpis' => [
                 'match_rate' => $summary['match_rate'] ?? null,
                 'items' => $summary['items'] ?? null,

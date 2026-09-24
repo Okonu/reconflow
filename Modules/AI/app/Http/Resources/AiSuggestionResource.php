@@ -26,6 +26,7 @@ final class AiSuggestionResource extends JsonResource
             'exception_id' => $s->exception_id,
             'run_id' => $s->run_id,
             'model' => $s->model,
+            'origin_label' => str_starts_with($s->model, 'stub') ? 'Offline rules stub (no AI key configured)' : 'AI-generated suggestion',
             'prompt_version' => $s->prompt_version,
             'served_by_fallback' => $s->served_by_fallback,
             'output' => $output,

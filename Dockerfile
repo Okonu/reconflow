@@ -37,7 +37,7 @@ COPY --from=assets /app/public/build ./public/build
 COPY deploy/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
 RUN rm -rf node_modules tests Modules/*/tests deploy Dockerfile Makefile .env \
     && composer dump-autoload --optimize --classmap-authoritative --no-dev \
-    && mkdir -p /data/audit-archive storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && mkdir -p /data/audit-archive /data/secrets storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && adduser -D -u 10001 reconflow \
     && chown -R reconflow:reconflow /app/storage /app/bootstrap/cache /data /config /data \
     && chmod +x /usr/local/bin/docker-entrypoint

@@ -58,7 +58,7 @@ export function RunNarrative({ runId }: { runId: number }) {
                 {summary && (
                     <>
                         <div className="flex flex-wrap items-center gap-2">
-                            <AiLabel model={summary.model} />
+                            <AiLabel model={summary.model} label={summary.origin_label} />
                             <span className="text-xs text-muted-foreground">
                                 {summary.requested_by} · {formatDateTime(summary.created_at)} · built from aggregates only
                             </span>

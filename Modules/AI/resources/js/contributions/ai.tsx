@@ -97,7 +97,7 @@ export default function AiPanel({ data, exceptionId }: ContributionProps<AiContr
                 {suggestion && suggestion.status !== 'failed' && (
                     <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
-                            <AiLabel model={suggestion.model} />
+                            <AiLabel model={suggestion.model} label={suggestion.origin_label} />
                             <span className="text-xs text-muted-foreground">
                                 prompt {suggestion.prompt_version} · requested by {suggestion.requested_by} {formatDateTime(suggestion.created_at)}
                             </span>

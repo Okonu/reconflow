@@ -1,8 +1,9 @@
 SHELL := /bin/bash
 COMPOSE := $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
-DC := $(COMPOSE) -p reconflow -f deploy/docker-compose.yml --env-file deploy/.env
+ENV_FILE := $(if $(wildcard deploy/.env),deploy/.env,deploy/.env.example)
+DC := $(COMPOSE) -p reconflow -f docker-compose.yml --env-file $(ENV_FILE)
 
-.PHONY: install dev migrate seed test test-all lint format types build up down logs ps
+.PHONY: install dev migrate seed test test-all lint format types build up down reset logs ps
 
 install:
 	composer install
@@ -42,10 +43,13 @@ build:
 
 up:
 	$(DC) up -d --build
-	@echo "ReconFlow: https://localhost:$$(grep -E '^HTTPS_PORT=' deploy/.env | cut -d= -f2)"
+	@echo "ReconFlow: http://localhost:$$(grep -sE '^HTTP_PORT=' $(ENV_FILE) | cut -d= -f2 | grep . || echo 8080)"
 
 down:
 	$(DC) down
+
+reset:
+	$(DC) down -v
 
 logs:
 	$(DC) logs -f --tail=100
