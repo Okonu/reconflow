@@ -49,7 +49,7 @@ final class TemplateBuilder
             $letter = Coordinate::stringFromColumnIndex($index + 1);
             $sheet->setCellValue("{$letter}1", $column->name);
             $sheet->getColumnDimension($letter)->setWidth($column->width);
-            $sheet->getStyle("{$letter}2:{$letter}".self::VALIDATION_ROWS)->getNumberFormat()->setFormatCode($column->type->excelNumberFormat());
+            $sheet->getStyle("{$letter}:{$letter}")->getNumberFormat()->setFormatCode($column->type->excelNumberFormat());
             $this->validation($sheet, $column, $letter);
         }
         $last = Coordinate::stringFromColumnIndex(count($columns));

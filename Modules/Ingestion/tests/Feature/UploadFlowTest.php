@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\Audit\Models\AuditEvent;
+use Modules\Ingestion\Enums\SourceType;
 use Modules\Ingestion\Models\SalesRecord;
 use Modules\Ingestion\Models\SourceBatch;
 use Modules\Ingestion\Models\UploadStaging;
+use Modules\Ingestion\Services\TemplateBuilder;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 beforeEach(fn () => $this->actingAs(demoUser('analyst@demo')));
@@ -50,6 +53,23 @@ it('generates templates from the schema with the reference layout', function (st
     ['payments', 'payments_upload_template.xlsx'],
     ['postings', 'erp_postings_upload_template.xlsx'],
 ]);
+
+it('builds each template within a web request memory budget with column-wide formats', function (SourceType $source): void {
+    memory_reset_peak_usage();
+    $before = memory_get_usage(true);
+
+    $path = app(TemplateBuilder::class)->build($source);
+
+    expect(memory_get_peak_usage(true) - $before)->toBeLessThan(48 * 1024 * 1024)
+        ->and(filesize($path))->toBeLessThan(100 * 1024);
+
+    $sheet = IOFactory::load($path)->getSheetByName('Data');
+    foreach ($source->schema()->columns() as $index => $column) {
+        $letter = Coordinate::stringFromColumnIndex($index + 1);
+        $xf = $sheet->getParent()->getCellXfByIndex($sheet->getColumnDimension($letter)->getXfIndex() ?? 0);
+        expect($xf->getNumberFormat()->getFormatCode())->toBe($column->type->excelNumberFormat());
+    }
+})->with(SourceType::cases());
 
 it('blocks a file whose columns do not match the template and refuses to confirm it', function (): void {
     $path = tempnam(sys_get_temp_dir(), 'csv').'.csv';
