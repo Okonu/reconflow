@@ -27,8 +27,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "32.00",
         "payment_reference": "TUP-S-EVAL01",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [
         {
@@ -37,7 +37,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "30.00",
           "reference": "TUP-S-EVAL01",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         }
       ],
       "erp_postings": [
@@ -88,8 +88,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "40.00",
         "payment_reference": "TUP-S-EVAL02",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [
         {
@@ -98,7 +98,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "45.00",
           "reference": "TUP-S-EVAL02",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         }
       ],
       "erp_postings": [
@@ -149,8 +149,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "28.00",
         "payment_reference": "TUP-S-EVAL03",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [],
       "erp_postings": [
@@ -202,8 +202,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "28.00",
         "payment_reference": "TUP-S-EVAL04",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [],
       "erp_postings": [
@@ -255,7 +255,7 @@
           "channel": "BANK",
           "amount": "55.00",
           "reference": "ACC 7781",
-          "payer": "CUST-zz9911"
+          "payer": "CUST_zz9911"
         }
       ],
       "erp_postings": []
@@ -300,8 +300,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "20.00",
         "payment_reference": "TUP-S-EVAL06",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [
         {
@@ -310,7 +310,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "20.00",
           "reference": "TUP-S-EVAL06",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         },
         {
           "payment_id": "SEV06B",
@@ -318,7 +318,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "20.00",
           "reference": "TUP-S-EVAL06",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         }
       ],
       "erp_postings": [
@@ -368,8 +368,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "60.00",
         "payment_reference": "TUP-S-EVAL07",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [
         {
@@ -378,7 +378,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "60.00",
           "reference": "TUP-S-EVAL07",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         }
       ],
       "erp_postings": [
@@ -428,8 +428,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "24.00",
         "payment_reference": "TUP-S-EVAL08",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [
         {
@@ -438,7 +438,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "24.00",
           "reference": "TUP-S-EVAL08",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         }
       ],
       "erp_postings": []
@@ -480,8 +480,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "35.00",
         "payment_reference": "TUP-S-EVAL09",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [
         {
@@ -490,7 +490,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "35.00",
           "reference": "TUP-S-EVAL09",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         }
       ],
       "erp_postings": [
@@ -547,8 +547,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "100.00",
         "payment_reference": "TUP-S-EVAL10",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [
         {
@@ -557,7 +557,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "49.00",
           "reference": "TUP-S-EVAL10",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         },
         {
           "payment_id": "SEV10B",
@@ -565,7 +565,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "49.00",
           "reference": "TUP-S-EVAL10",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         }
       ],
       "erp_postings": [
@@ -617,7 +617,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "28.00",
           "reference": "TUP-S-EVAL1I",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         }
       ],
       "erp_postings": []
@@ -661,8 +661,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "480.00",
         "payment_reference": "TUP-S-EVAL12",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [],
       "erp_postings": [
@@ -714,8 +714,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "32.00",
         "payment_reference": "TUP-S-EVAL01",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [
         {
@@ -724,7 +724,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "31.20",
           "reference": "TUP-S-EVAL01",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         }
       ],
       "erp_postings": [
@@ -776,7 +776,7 @@
           "channel": "CASH",
           "amount": "28.00",
           "reference": null,
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         }
       ],
       "erp_postings": []
@@ -821,7 +821,7 @@
           "channel": "BANK",
           "amount": "2500.00",
           "reference": "ACC 7781",
-          "payer": "CUST-zz9911"
+          "payer": "CUST_zz9911"
         }
       ],
       "erp_postings": []
@@ -865,8 +865,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "60.00",
         "payment_reference": "TUP-S-EVAL07",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [
         {
@@ -875,7 +875,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "60.00",
           "reference": "TUP-S-EVAL07",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         }
       ],
       "erp_postings": [
@@ -927,8 +927,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "28.00",
         "payment_reference": "TUP-S-EVAL04",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [],
       "erp_postings": [
@@ -979,8 +979,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "20.00",
         "payment_reference": "TUP-S-EVAL06",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [
         {
@@ -989,7 +989,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "20.00",
           "reference": "TUP-S-EVAL06",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         },
         {
           "payment_id": "SEV06B",
@@ -997,7 +997,7 @@
           "channel": "BANK",
           "amount": "20.00",
           "reference": "TUP-S-EVAL06",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         }
       ],
       "erp_postings": [
@@ -1048,8 +1048,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "40.00",
         "payment_reference": "TUP-S-EVAL02",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [
         {
@@ -1058,7 +1058,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "52.00",
           "reference": "TUP-S-EVAL02",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         }
       ],
       "erp_postings": [
@@ -1109,8 +1109,8 @@
         "product_sku": "SOLAR-LAMP-S1",
         "expected_amount": "35.00",
         "payment_reference": "TUP-S-EVAL09",
-        "customer": "CUST-a1b2c3",
-        "agent": "AGENT-9f8e7d"
+        "customer": "CUST_a1b2c3",
+        "agent": "AGENT_9f8e7d"
       },
       "payments": [
         {
@@ -1119,7 +1119,7 @@
           "channel": "MOBILE_MONEY",
           "amount": "35.00",
           "reference": "TUP-S-EVAL09",
-          "payer": "CUST-a1b2c3"
+          "payer": "CUST_a1b2c3"
         }
       ],
       "erp_postings": [

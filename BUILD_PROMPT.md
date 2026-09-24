@@ -329,14 +329,14 @@ reconflow/
     Users/                      # accounts, session login/logout, user administration        [Phase 1: built]
     Rbac/                       # permission catalogue sync, roles, role assignment, lock-out guard   [Phase 1: built]
     Audit/                      # hash-chained logger, verifier, archive + checkpoint        [Phase 1: built]
-    DataProtection/             # classification, masking, pseudonymiser, PII log processor  [Phase 1: built; retention/erasure later]
+    DataProtection/             # classification, masking, pseudonymiser, PII log processor  [Phase 1: built; retention anonymisation, erasure, unmask: Phase 7]
     Ingestion/                  # connectors (mock + upload), staging, data quality, templates, mock source APIs, synthetic data   [Phase 2: built]
     Reconciliation/             # rules R1–R7, engine, runs, results, report exports, rule settings   [Phase 3: built]
-    ExceptionManagement/        # exception workflow, assignment, SLA, run sign-off
-    Adjustments/                # maker-checker approvals, ERP posting
-    AI/                         # ClaudeClient, Redactor, prompts, suggestions, oversight, kill switch
-    Notifications/              # in-app, Slack, email, daily summary
-    Dashboard/                  # KPIs, trends, ageing
+    ExceptionManagement/        # exception workflow, assignment, SLA, run sign-off   [Phase 4: built]
+    Adjustments/                # maker-checker approvals, ERP posting   [Phase 4: built]
+    AI/                         # ClaudeClient, Redactor, prompts, suggestions, oversight, kill switch   [Phase 5: built]
+    Notifications/              # in-app, Slack, email, daily summary   [Phase 4: built]
+    Dashboard/                  # KPIs, trends, ageing   [Phase 6: built]
     <Module>/
       app/                      # Actions/ Console/ DTOs/ Enums/ Http/{Controllers,Middleware,Requests,Resources}/
                                 # Metrics/ Models/ Policies/ Providers/ Services/ Support/ Traits/
@@ -393,10 +393,10 @@ Stop after each phase, summarise what exists, list assumptions made, and wait fo
 1. **Foundation** ✅ *(built 2026-09-24)*: Laravel app with Users, Rbac, Audit and DataProtection modules; shared kernel in `app/`; migrations; session auth + permissions-first RBAC with policies; data classification, masking, pseudonymisation and PII-safe logging; hash-chained audit logger, verifier and automatic archive with checkpoints; health/readiness/metrics; Inertia shell with login; multi-stage Docker image (FrankenPHP), compose (app, worker, scheduler, postgres, caddy); CI (Pint, Larastan, ESLint, tsc, Vite build, Pest, GHCR push, optional SSH deploy). 85 Pest tests passing. *Checkpoint: `make up` boots; login works; CI green.*
 2. **Data** ✅ *(built 2026-09-24)*: synthetic generator (template-format export), golden/volume fixtures wired into tests, mock source APIs, connectors, **upload → staging → preview → confirm** API, template download endpoint, DQ validation + quarantine, reset demo data. *Checkpoint: 14 days seeded; DQ report visible via API.*
 3. **Engine** ✅ *(built 2026-09-24)*: rules R1–R7, engine, run versioning, scheduler, run-now endpoint, all rule/golden/idempotency tests. *Checkpoint: golden test passes; 50k perf test passes.*
-4. **Workflow:** exceptions, state machine, assignment/SLA, adjustments, approvals with SoD and thresholds, mock ERP posting with idempotency, run sign-off, notifications. *Checkpoint: full API flow scripted in a test.*
-5. **AI assist:** Claude triage client with schema validation, batching, fallback, storage of suggestions and human decisions; narrative summary. Include the `redact()` layer, override-reason capture, kill switch, AI oversight panel and eval set. *Checkpoint: works with a key and without one; governance tests pass.*
-6. **Frontend:** all pages in section 7, wired to the API, polished. *Checkpoint: click-through demo of the full story.*
-7. **Docs and hardening:** all docs in section 11, test report, final README, `.env.example`, security pass (no secrets in repo, CORS, rate-limit login, secure headers).
+4. **Workflow** ✅ *(built 2026-09-24; tests written, run deferred to the test phase)*: exceptions, state machine, assignment/SLA, adjustments, approvals with SoD and thresholds, mock ERP posting with idempotency, run sign-off, notifications. *Checkpoint: full API flow scripted in a test.*
+5. **AI assist** ✅ *(built 2026-09-24; tests deferred)*: Claude triage client with schema validation, batching, fallback, storage of suggestions and human decisions; narrative summary. Include the `redact()` layer, override-reason capture, kill switch, AI oversight panel and eval set. *Checkpoint: works with a key and without one; governance tests pass.*
+6. **Frontend** ✅ *(built 2026-09-24)*: all pages in section 7, wired to the API, polished. *Checkpoint: click-through demo of the full story.*
+7. **Docs and hardening** ✅ *(built 2026-09-24; test report generated in the test phase)*: all docs in section 11, test report, final README, `.env.example`, security pass (no secrets in repo, CORS, rate-limit login, secure headers).
 
 ---
 

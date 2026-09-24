@@ -14,5 +14,6 @@ return [
     'max_retries' => 2,
     'refusal_fallbacks' => (bool) env('AI_REFUSAL_FALLBACKS', true),
     'prompt_version' => env('AI_PROMPT_VERSION', 'v1'),
+    'batch_limit' => (int) env('AI_BATCH_LIMIT', 200),
     'log_retention_months' => (int) env('RETENTION_AI_LOGS_MONTHS', 12),
 ];

@@ -8,6 +8,8 @@ final class PersonalData
 {
     public const MASK = '•';
 
+    public const ANONYMISED = 'ANONYMISED';
+
     private const PHONE = '/(?<!\d)(?:\+?254|0)(?:7|1)\d{8}(?!\d)/';
 
     private const BEARER = '/bearer\s+[A-Za-z0-9._\-]+/i';
@@ -34,6 +36,19 @@ final class PersonalData
         }
 
         return substr($local, 0, 2).str_repeat(self::MASK, 2).' '.str_repeat(self::MASK, 3).' '.substr($local, -3);
+    }
+
+    public static function phoneVariants(string $value): array
+    {
+        $digits = preg_replace('/\D/', '', $value) ?? '';
+        $national = match (true) {
+            strlen($digits) === 12 && str_starts_with($digits, '254') => substr($digits, 3),
+            strlen($digits) === 10 && str_starts_with($digits, '0') => substr($digits, 1),
+            strlen($digits) === 9 => $digits,
+            default => null,
+        };
+
+        return $national === null ? [$value] : ["254{$national}", "0{$national}", "+254{$national}", $national];
     }
 
     public static function maskRecord(string $dataset, array $record): array

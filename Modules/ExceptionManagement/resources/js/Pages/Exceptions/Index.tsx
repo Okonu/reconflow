@@ -1,4 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useState } from 'react';
 import { EmptyState } from '@/components/empty-state';
 import { PaginationLinks } from '@/components/pagination-links';
@@ -27,6 +28,7 @@ export default function ExceptionsIndex({ exceptions, filters, summary, options,
     const [selected, setSelected] = useState<number[]>([]);
     const [assignee, setAssignee] = useState('');
     const [search, setSearch] = useState(filters.search ?? '');
+    const { can: hasPermission } = usePermissions();
 
     const apply = (changes: Partial<QueueFilters> & { page?: number }) => {
         const next = { ...filters, ...changes };
@@ -49,6 +51,14 @@ export default function ExceptionsIndex({ exceptions, filters, summary, options,
                     <p className="text-sm text-muted-foreground">Everything that did not reconcile cleanly, ordered by severity and SLA. Items carried from earlier days stay here until resolved.</p>
                 </div>
                 <SummaryTiles summary={summary} />
+                {hasPermission('ai.use') && filters.business_date && (
+                    <div className="flex items-center gap-3 rounded-md border border-violet-200 p-3 text-sm">
+                        <span>Ask the AI assistant for a suggested cause and next step on every open exception for {filters.business_date}.</span>
+                        <Button size="sm" variant="outline" onClick={() => router.post(route('ai.triage-batch'), { business_date: filters.business_date }, { preserveScroll: true })}>
+                            Suggest for all
+                        </Button>
+                    </div>
+                )}
                 <div className="flex flex-wrap items-center gap-3">
                     <NativeSelect aria-label="State" value={filters.state ?? ''} onChange={(e) => apply({ state: e.target.value || null })}>
                         <option value="open">All open</option>

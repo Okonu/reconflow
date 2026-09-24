@@ -17,4 +17,9 @@ final class PersonalDataPolicy
     {
         return $this->permit($user, DataProtectionPermission::UnmaskPersonalData);
     }
+
+    public function erase(User $user): Response
+    {
+        return $this->permit($user, DataProtectionPermission::EraseSubjectData);
+    }
 }

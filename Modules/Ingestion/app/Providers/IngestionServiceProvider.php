@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Ingestion\Providers;
 
+use App\Contracts\PersonalDataStore;
 use App\Http\Controllers\System\MetricsController;
 use App\Support\Authorization\PermissionRegistry;
 use App\Support\Modules\ModuleProvider;
@@ -23,6 +24,7 @@ use Modules\Ingestion\Models\UploadStaging;
 use Modules\Ingestion\Policies\SourceBatchPolicy;
 use Modules\Ingestion\Policies\UploadStagingPolicy;
 use Modules\Ingestion\Support\Demo\IngestionTables;
+use Modules\Ingestion\Support\IngestionPersonalData;
 
 final class IngestionServiceProvider extends ModuleProvider
 {
@@ -49,6 +51,7 @@ final class IngestionServiceProvider extends ModuleProvider
             : $app->make(LocalMockSourceConnector::class));
         $this->app->tag([IngestionMetrics::class], MetricsController::COLLECTOR_TAG);
         $this->app->tag([IngestionTables::class], ResetDemoData::RESETTER_TAG);
+        $this->app->tag([IngestionPersonalData::class], PersonalDataStore::TAG);
     }
 
     public function boot(): void

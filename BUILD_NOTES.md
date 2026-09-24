@@ -68,6 +68,42 @@ Running log of technical choices, simplifications and known limitations. Newest 
 | 23 | AI eval set location | `Modules/AI/resources/evals/triage_v1.json` (20 cases) instead of `tests/fixtures`, because the Docker image strips test folders and the eval must be runnable in production. CI runs it only when the `ANTHROPIC_API_KEY` secret is set; tests always use `AI_DRIVER=stub` |
 | 24 | AI decisions and the exception timeline | The AI module writes only to `ai_suggestions` (governance rule). Decisions appear in the AI panel, on the oversight page and in the audit log, not on the exception timeline |
 | 25 | Self-approval message | The segregation-of-duties check runs before the permission check, so a proposer always sees "someone else must approve", and the approve button is shown disabled with that reason |
+| 26 | Transaction retention | `reconflow:anonymise-expired` (daily 02:30) replaces customer and payer phones older than `RETENTION_TRANSACTIONS_YEARS` with `ANONYMISED` in records, quarantine rows and mock source copies, and clears old staged uploads. Implemented through a `PersonalDataStore` contract that Ingestion provides |
+| 27 | Erasure interface | API only: `POST /privacy/erasures` (`privacy.erase`, Administrator) with phone, reason and request reference. It anonymises every copy and audits a pseudonym token of the subject, never the number |
+| 28 | CORS | The app is same-origin. `config/cors.php` allows no cross-origin callers unless `CORS_ALLOWED_ORIGINS` is set, and then only for `api/*` GET/POST without credentials |
+| 29 | Batch triage | "Suggest for all" on the exception queue (for a filtered business date) queues suggestions for up to 200 open exceptions without one (`AI_BATCH_LIMIT`). The job stops as soon as the kill switch is flipped. This uses sequential calls, not the Message Batches API, so results appear within minutes |
+
+## Phase 7: Docs and hardening
+
+### What exists
+- **Docs:** `docs/architecture.md`, `reconciliation-rules.md`, `data-model.md`, `controls-matrix.md`, `ai-governance.md` (use register, model card, risk assessment, oversight design, go-live gates), `data-protection.md` (inventory, egress diagram, masking, retention, DPIA-lite), `runbook.md`, `deployment.md` and `api.md`. The README has the demo script and a docs index.
+- **Retention and erasure:** implemented (open questions 26 and 27).
+- **Security pass:**
+  - no secrets tracked (`.env` and `deploy/.env` are git-ignored; only examples are committed);
+  - restrictive CORS;
+  - login throttling;
+  - Argon2id hashing;
+  - CSP with nonces and security headers, plus HSTS at Caddy;
+  - secure, HTTP-only, same-site session cookies in production;
+  - `/metrics` blocked at the edge;
+  - DB on an internal network;
+  - rate limits on exports, AI, unmask and batch triage;
+  - formula-safe exports.
+- **CI:** an AI eval step runs when the `ANTHROPIC_API_KEY` secret is present; tests force `AI_DRIVER=stub`.
+
+### Deferred until all phases are done (owner instruction: tests after the phases)
+- Run the full suite, Larastan and the slow performance test; fix failures.
+- Write the missing tests:
+  - AI governance: no raw phone in an outbound payload, kill switch, override reason, schema rejection;
+  - notifications;
+  - settings;
+  - report export masking and escaping;
+  - unmask;
+  - erasure and retention;
+  - dashboard;
+  - permission contract rows for every new route.
+- Generate `docs/test-report.md` from the run.
+- Verify the Docker deployment end to end (`make down && make up`, first-boot seed, demo script click-through).
 
 ## Phase 6: Pages and demo flow
 

@@ -15,6 +15,7 @@ use Modules\AI\Enums\AiAuditAction;
 use Modules\AI\Enums\SuggestionKind;
 use Modules\AI\Http\Requests\DecideSuggestionRequest;
 use Modules\AI\Http\Resources\AiSuggestionResource;
+use Modules\AI\Jobs\TriageBatchJob;
 use Modules\AI\Models\AiSuggestion;
 use Modules\AI\Services\AiConfig;
 use Modules\AI\Services\AiSettings;
@@ -40,6 +41,24 @@ final class AiController extends Controller
         }
 
         return back()->with('success', 'AI suggestion ready. Review it before acting: it does not change anything by itself.');
+    }
+
+    public function triageBatch(Request $request, AiSettings $settings): RedirectResponse
+    {
+        $this->authorize('create', AiSuggestion::class);
+        $data = $request->validate(['business_date' => ['required', 'date_format:Y-m-d']]);
+        if (! $settings->enabled()) {
+            return back()->with('error', 'AI suggestion unavailable: '.($settings->status()['reason'] ?? 'the assistant is off.'));
+        }
+        $ids = ReconException::query()->whereDate('business_date', $data['business_date'])->whereIn('state', ReconException::openStateValues())
+            ->whereNotIn('id', AiSuggestion::query()->where('kind', SuggestionKind::Triage->value)->whereNotNull('exception_id')->whereNot('status', 'failed')->select('exception_id'))
+            ->limit((int) config('ai.batch_limit'))->pluck('id')->all();
+        if ($ids === []) {
+            return back()->with('success', 'Every open exception for that date already has a suggestion.');
+        }
+        TriageBatchJob::dispatch($this->user($request)->id, $ids);
+
+        return back()->with('success', 'Queued AI suggestions for '.count($ids).' exceptions. They appear on each exception as they complete.');
     }
 
     public function decide(DecideSuggestionRequest $request, AiSuggestion $suggestion, DecideSuggestion $decide): RedirectResponse
