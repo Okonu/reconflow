@@ -1,14 +1,14 @@
 # Assumptions and scope limits
 
-This document records the assumptions when we make them. Each item gives the person who decided it and where the system enforces it. The [Decision log](decision-log.md) gives the assumptions register with the effect of each assumption and how we will confirm it.
+This document records the assumptions when we make them. Each item shows who decided it and where the system enforces it. The [Decision log](decision-log.md) gives the assumptions register with the effect of each assumption and how we will confirm it.
 
 ## Scope of the reconciliation
 
-- **Cash sales only.** Credit sales are out of scope. The system treats two or more payments for one sale as instalments of a cash sale. If their total and the expected amount differ by more than the tolerance, the sale is a VARIANCE. The rule is `R2+R4`, with the flag `split` and the default category "Customer under/over-payment (instalments)". For production, sales need a `payment_type` field. Then credit instalments can go to receivables and not to the variance list. *(Owner, 2026-09-24.)*
+- **Cash sales only.** Credit sales are out of scope. The system treats two or more payments for one sale as instalments of a cash sale. If their total and the expected amount differ by more than the tolerance, the sale is a VARIANCE. The rule is `R2+R4`, with the flag `split` and the default category "Customer under/over-payment (instalments)". For production, sales need a `payment_type` field. Then credit instalments can go to receivables and not to the variance list. *(My decision, 2026-09-24.)*
 - **One currency (USD).** Rows in other currencies go into quarantine. Currency conversion is out of scope.
 - **Postings with no sale.** An ERP line whose transaction ID agrees with no sale for the date is not a reconciliation item. The answer keys give no status for it. A production version must show these lines in the data-quality report.
 
-## Limits for matching (owner, 2026-09-24)
+## Limits for matching (my decisions, 2026-09-24)
 
 | Limit | Rule |
 |---|---|
@@ -21,7 +21,7 @@ This document records the assumptions when we make them. Each item gives the per
 
 All times are Africa/Nairobi.
 
-## Prior-day items (owner, 2026-09-24)
+## Prior-day items (my decisions, 2026-09-24)
 
 - A payment belongs to the date of its timestamp. The run for D can use payments from D+1 00:00 to 06:00. The run for D+1 gets the payments that the run for D did not use. The report for D never shows them as UNMATCHED_PAYMENT.
 - A PENDING_TIMING sale goes forward one day (`timing_carry_days`, default 1). If the next run finds no payment, the item escalates to MISSING_PAYMENT. The reason is "no payment by close of D+1 window".
@@ -34,8 +34,8 @@ All times are Africa/Nairobi.
   - one sale for one payment;
   - no match for a tie.
 
-  It uses one pass with the sales of the current day. Thus a payment that agrees with both is a tie. The result is MATCHED_FUZZY in the prior-day section, with a flag for confirmation. *(Owner, 2026-09-24.)*
-- **Escalated items and missing payments in the lookback.** The system matches them automatically only by exact reference or by R2 split. It shows other possible matches: unmatched later payments from the same phone, with an amount within the tolerance, in the lookback. An analyst (`matches.confirm`) can confirm one, with a reason. This makes an audited manual match (who, when and why). The item becomes "Paid late (D+n), manually matched". The system keeps the match separately and applies it again at each new run. *(Owner, 2026-09-24.)*
+  It uses one pass with the sales of the current day. Thus a payment that agrees with both is a tie. The result is MATCHED_FUZZY in the prior-day section, with a flag for confirmation. *(My decision, 2026-09-24.)*
+- **Escalated items and missing payments in the lookback.** The system matches them automatically only by exact reference or by R2 split. It shows other possible matches: unmatched later payments from the same phone, with an amount within the tolerance, in the lookback. An analyst (`matches.confirm`) can confirm one, with a reason. This makes an audited manual match (who, when and why). The item becomes "Paid late (D+n), manually matched". The system keeps the match separately and applies it again at each new run. *(My decision, 2026-09-24.)*
 
 ## Business assumptions
 
