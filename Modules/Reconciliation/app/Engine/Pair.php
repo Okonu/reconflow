@@ -6,6 +6,8 @@ namespace Modules\Reconciliation\Engine;
 
 final readonly class Pair
 {
+    public const MANUAL = 'MANUAL';
+
     public function __construct(
         public SaleInput $sale,
         public array $payments,

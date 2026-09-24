@@ -43,6 +43,7 @@ final class ItemStateLedger
             ->where('r.section', 'current')
             ->whereIn('r.status', [ReconStatus::PendingTiming->value, ReconStatus::MissingPayment->value])
             ->where(fn ($q) => $q->whereNull('st.state')->orWhereIn('st.state', [ItemState::Open->value, ItemState::Escalated->value]))
+            ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('recon_manual_matches as mm')->whereColumn('mm.transaction_id', 'r.transaction_id')->whereColumn('mm.sale_date', 'r.business_date'))
             ->orderBy('r.id')
             ->get(['r.id', 'r.run_id', 'r.business_date', 'r.status', 'r.transaction_id', 'r.expected_amount', 'st.state', 's.id as sale_id', 's.sold_at', 's.customer_phone', 's.payment_reference']);
 
@@ -70,6 +71,18 @@ final class ItemStateLedger
         return $items;
     }
 
+    public function resolveManually(int $resultId, string $date, string $reason, ReconStatus $effective): void
+    {
+        ItemStateRecord::query()->updateOrCreate(['result_id' => $resultId], [
+            'business_date' => $date,
+            'state' => ItemState::Resolved,
+            'effective_status' => $effective,
+            'resolved_by_run_id' => null,
+            'resolved_by_result_id' => null,
+            'reason' => $reason,
+        ]);
+    }
+
     public function releaseDecisionsBy(array $runIds, ReconRun $newRun): int
     {
         $records = ItemStateRecord::query()->whereIn('resolved_by_run_id', $runIds)->get();
@@ -88,11 +101,13 @@ final class ItemStateLedger
     {
         foreach ($priorResults as [$item, $resultId]) {
             assert($item instanceof ResultItem);
-            $resolved = $item->status === ReconStatus::MatchedPriorDay;
+            $resolved = in_array($item->status, [ReconStatus::MatchedPriorDay, ReconStatus::MatchedFuzzy], true);
             $payments = implode(', ', $item->paymentIds());
-            $reason = $resolved
-                ? "Resolved on {$run->business_date->toDateString()} by payment {$payments}"
-                : "Payment {$payments} received on {$run->business_date->toDateString()}; now {$item->status->value}";
+            $reason = match (true) {
+                ($item->flags['manual_match'] ?? false) === true => "{$item->tag} (confirmed manual match, payment {$payments})",
+                $resolved => "Resolved on {$run->business_date->toDateString()} by payment {$payments}",
+                default => "Payment {$payments} received on {$run->business_date->toDateString()}; now {$item->status->value}",
+            };
             $this->write($item->sale?->priorResultId, $item->sale?->priorDate, $resolved ? ItemState::Resolved : ItemState::Reclassified, $item->status, $run->id, $resultId, $reason);
             $this->audit->record($resolved ? ReconAuditAction::ItemResolved : ReconAuditAction::ItemReclassified, AuditLogger::SYSTEM_ACTOR, 'recon_result', $item->sale?->priorResultId, [
                 'resolved_by_run_id' => $run->id,

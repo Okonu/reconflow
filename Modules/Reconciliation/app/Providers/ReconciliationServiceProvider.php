@@ -18,7 +18,9 @@ use Modules\Reconciliation\Console\Commands\ReconcileCommand;
 use Modules\Reconciliation\Enums\ReconPermission;
 use Modules\Reconciliation\Listeners\ReconcileSeededDates;
 use Modules\Reconciliation\Metrics\ReconciliationMetrics;
+use Modules\Reconciliation\Models\ReconResult;
 use Modules\Reconciliation\Models\ReconRun;
+use Modules\Reconciliation\Policies\ReconResultPolicy;
 use Modules\Reconciliation\Policies\ReconRunPolicy;
 use Modules\Reconciliation\Services\RuleConfigService;
 use Modules\Reconciliation\Support\Demo\ReconciliationTables;
@@ -53,6 +55,7 @@ final class ReconciliationServiceProvider extends ModuleProvider
 
         $this->app->make(PermissionRegistry::class)->register(ReconPermission::class);
         Gate::policy(ReconRun::class, ReconRunPolicy::class);
+        Gate::policy(ReconResult::class, ReconResultPolicy::class);
         Event::listen(DemoDataSeeded::class, ReconcileSeededDates::class);
     }
 

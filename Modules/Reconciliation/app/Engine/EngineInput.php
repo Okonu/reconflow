@@ -17,5 +17,6 @@ final readonly class EngineInput
         public int $timingCutoffAt,
         public int $dayEndsAt,
         public RuleConfig $config,
+        public array $manualMatches = [],
     ) {}
 }

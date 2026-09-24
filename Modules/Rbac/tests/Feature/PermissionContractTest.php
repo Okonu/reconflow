@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\Ingestion\Models\SourceBatch;
 use Modules\Ingestion\Models\UploadStaging;
 use Modules\Rbac\Models\Role;
+use Modules\Reconciliation\Models\ReconResult;
 use Modules\Reconciliation\Models\ReconRun;
 
 const PERMISSION_CONTRACT = [
@@ -34,6 +35,8 @@ const PERMISSION_CONTRACT = [
     'runs' => ['GET', 'runs.index', [], 'runs.view'],
     'run now' => ['POST', 'runs.store', [], 'runs.trigger'],
     'run detail' => ['GET', 'runs.show', ['run' => 'run'], 'runs.view'],
+    'possible matches' => ['GET', 'results.possible-matches', ['result' => 'result'], 'results.view'],
+    'confirm manual match' => ['POST', 'results.manual-match', ['result' => 'result'], 'matches.confirm'],
 ];
 
 dataset('protected routes', PERMISSION_CONTRACT);
@@ -58,6 +61,16 @@ function contractBatch(): SourceBatch
     ]);
 }
 
+function contractResult(): ReconResult
+{
+    $run = ReconRun::query()->create(['business_date' => '2026-09-22', 'version' => random_int(1, 1000000), 'status' => 'completed', 'trigger' => 'manual', 'rule_config' => []]);
+
+    return ReconResult::query()->create([
+        'run_id' => $run->id, 'business_date' => '2026-09-22', 'section' => 'current', 'transaction_id' => 'T-X', 'payment_ids' => [],
+        'status' => 'MISSING_PAYMENT', 'roll_up' => 'Exception', 'rule_id' => 'R7', 'payment_record_ids' => [], 'payment_identities' => [], 'flags' => [],
+    ]);
+}
+
 function contractUrl(string $name, array $params, $user): string
 {
     $resolved = array_map(fn (string $v) => match (true) {
@@ -66,6 +79,7 @@ function contractUrl(string $name, array $params, $user): string
         $v === 'staging' => contractStaging($user)->id,
         $v === 'batch' => contractBatch()->id,
         $v === 'run' => ReconRun::query()->create(['business_date' => '2026-09-22', 'version' => random_int(1, 1000000), 'status' => 'queued', 'trigger' => 'manual', 'rule_config' => []])->id,
+        $v === 'result' => contractResult()->id,
         str_starts_with($v, '=') => substr($v, 1),
     }, $params);
 

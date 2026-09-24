@@ -16,4 +16,5 @@ enum ReconAuditAction: string
     case ItemEscalated = 'item.escalated';
     case ItemReclassified = 'item.reclassified';
     case ItemReopened = 'item.reopened';
+    case ManualMatchConfirmed = 'match.manual_confirmed';
 }

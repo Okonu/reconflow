@@ -114,7 +114,7 @@ Detailed status → roll-up shown to business users, mirroring the brief's repor
 | `UNMATCHED_PAYMENT` | Exception | Payment with no corresponding sale (the brief's "Expected: Missing") |
 | `MISSING_POSTING` | Exception | Sale and payment match but nothing is posted in the ERP |
 | `DUPLICATE_PAYMENT` | Exception | Same receipt twice, or same reference + amount within 5 minutes |
-| `MATCHED_PRIOR_DAY` | Match (prior day) | A carried PENDING_TIMING sale or an open MISSING_PAYMENT from the last 7 days cleared by a payment on this date; reported in a separate section, excluded from the day's metrics. Owner decision 2026-09-24 |
+| `MATCHED_PRIOR_DAY` | Match (prior day) | A carried PENDING_TIMING sale or an open MISSING_PAYMENT from the last 7 days cleared by a payment on this date (exact reference, split, or a confirmed manual match tagged "Paid late (D+n), manually matched"); reported in a separate section, excluded from the day's metrics. A carried sale matched by R3 is MATCHED_FUZZY in that section, flagged as needing confirmation. Owner decisions 2026-09-24 |
 | `DUPLICATE_POSTING` | Exception | Two different POSTED journal lines for the same transaction_id (REVERSED lines excluded). Owner decision 2026-09-24 |
 
 ### 3.4 Matching rules (apply in this order; each result records `rule_id`)

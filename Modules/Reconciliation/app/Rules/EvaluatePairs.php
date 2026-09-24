@@ -35,13 +35,21 @@ final class EvaluatePairs
         $difference = $pair->actualCents() - $pair->sale->expectedCents;
         $split = count($pair->payments) > 1;
         $flags = ['split' => $split];
-        $tag = $section === ResultSection::PriorDay ? self::priorTag($pair->sale, $input->businessDate) : null;
+        if ($pair->rule === 'R3') {
+            $flags['needs_confirmation'] = true;
+        }
+        if ($pair->rule === Pair::MANUAL) {
+            $flags['manual_match'] = true;
+        }
+        $tag = $section === ResultSection::PriorDay ? self::priorTag($pair->sale, $input->businessDate, $pair->rule === Pair::MANUAL) : null;
 
         if (abs($difference) > $input->config->toleranceCents()) {
-            return new ResultItem($section, ReconStatus::Variance, $split ? 'R2+R4' : 'R4', $pair->sale, $pair->payments, $posted['amount'], $posted['journal'], $pair->confidence, $tag, $flags);
+            return new ResultItem($section, ReconStatus::Variance, $pair->rule === Pair::MANUAL ? Pair::MANUAL : ($split ? 'R2+R4' : 'R4'), $pair->sale, $pair->payments, $posted['amount'], $posted['journal'], $pair->confidence, $tag, $flags);
         }
 
         [$status, $rule] = match (true) {
+            $pair->rule === Pair::MANUAL => [ReconStatus::MatchedPriorDay, Pair::MANUAL],
+            $section === ResultSection::PriorDay && $pair->rule === 'R3' => [ReconStatus::MatchedFuzzy, 'R3'],
             $section === ResultSection::PriorDay => [ReconStatus::MatchedPriorDay, $split ? 'R2' : 'R1+R4+R6'],
             $pair->rule === 'R3' => [ReconStatus::MatchedFuzzy, 'R3'],
             $pair->rule === 'R2' => [ReconStatus::MatchedSplit, 'R2'],
@@ -81,13 +89,13 @@ final class EvaluatePairs
         ];
     }
 
-    public static function priorTag(SaleInput $sale, string $businessDate): string
+    public static function priorTag(SaleInput $sale, string $businessDate, bool $manual = false): string
     {
-        if ($sale->origin === SaleInput::CARRIED) {
-            return 'Paid next day';
-        }
         $days = intdiv(strtotime($businessDate.' 00:00:00 UTC') - strtotime($sale->priorDate.' 00:00:00 UTC'), 86400);
+        if ($manual) {
+            return "Paid late (D+{$days}), manually matched";
+        }
 
-        return "Paid late (D+{$days})";
+        return $sale->origin === SaleInput::CARRIED ? 'Paid next day' : "Paid late (D+{$days})";
     }
 }

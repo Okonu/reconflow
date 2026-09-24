@@ -28,16 +28,18 @@ final class RunInputLoader
     {
         $date = CarbonImmutable::parse($businessDate, $config->timezone)->startOfDay();
         $priorItems = $this->ledger->openPriorItems($businessDate, $config);
+        $manualMatches = $this->manualMatches($businessDate);
 
         return new EngineInput(
             businessDate: $businessDate,
             sales: $this->sales($batchIds[SourceType::Sales->value] ?? null),
             priorItems: $priorItems,
             payments: $this->payments($batchIds[SourceType::Payments->value] ?? null, $this->claimedByPreviousDay($date), $config->timezone),
-            postingsByTransaction: $this->postings($batchIds[SourceType::Postings->value] ?? null, $priorItems),
+            postingsByTransaction: $this->postings($batchIds[SourceType::Postings->value] ?? null, [...$priorItems, ...array_values($manualMatches)]),
             timingCutoffAt: $date->setTimeFromTimeString($config->timingCutoff)->getTimestamp(),
             dayEndsAt: $date->addDay()->getTimestamp(),
             config: $config,
+            manualMatches: $manualMatches,
         );
     }
 
@@ -102,6 +104,31 @@ final class RunInputLoader
         }
 
         return $byTransaction;
+    }
+
+    private function manualMatches(string $businessDate): array
+    {
+        $rows = DB::table('recon_manual_matches as mm')
+            ->join('sales_records as s', 's.id', '=', 'mm.sale_record_id')
+            ->whereDate('mm.payment_date', $businessDate)
+            ->get(['mm.id', 'mm.transaction_id', 'mm.sale_date', 'mm.sale_result_id', 'mm.payment_identity', 's.id as sale_id', 's.sold_at', 's.customer_phone', 's.expected_amount', 's.payment_reference']);
+        $matches = [];
+        foreach ($rows as $row) {
+            $matches[(string) $row->payment_identity] = new SaleInput(
+                key: 'manual:'.$row->id,
+                transactionId: (string) $row->transaction_id,
+                soldAt: (int) strtotime((string) $row->sold_at),
+                phone: (string) $row->customer_phone,
+                expectedCents: Cents::fromDecimal((string) $row->expected_amount),
+                reference: $row->payment_reference,
+                origin: SaleInput::LOOKBACK,
+                recordId: (int) $row->sale_id,
+                priorResultId: $row->sale_result_id === null ? null : (int) $row->sale_result_id,
+                priorDate: CarbonImmutable::parse((string) $row->sale_date)->toDateString(),
+            );
+        }
+
+        return $matches;
     }
 
     private function claimedByPreviousDay(CarbonImmutable $date): array

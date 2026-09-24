@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 final class ReconciliationTables implements ResetsDemoData
 {
-    public const TABLES = ['recon_item_states', 'recon_results', 'recon_runs'];
+    public const TABLES = ['recon_manual_matches', 'recon_item_states', 'recon_results', 'recon_runs'];
 
     public function resetOrder(): int
     {

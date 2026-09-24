@@ -14,6 +14,7 @@ enum ReconPermission: string implements PermissionEnum
     case ViewResults = 'results.view';
     case ExportResults = 'results.export';
     case ExportResultsUnmasked = 'results.export_unmasked';
+    case ConfirmMatches = 'matches.confirm';
     case ViewConfig = 'config.view';
     case ManageConfig = 'config.manage';
 
@@ -25,6 +26,7 @@ enum ReconPermission: string implements PermissionEnum
             self::ViewResults => 'View the reconciliation report',
             self::ExportResults => 'Export the reconciliation report with personal data masked',
             self::ExportResultsUnmasked => 'Export the reconciliation report unmasked (reason required, audited)',
+            self::ConfirmMatches => 'Confirm a suggested late-payment match (audited manual match)',
             self::ViewConfig => 'View reconciliation rule settings',
             self::ManageConfig => 'Change reconciliation rule settings (versioned, audited)',
         };
@@ -39,7 +41,7 @@ enum ReconPermission: string implements PermissionEnum
     {
         return match ($this) {
             self::ViewRuns, self::ViewResults, self::ViewConfig => DefaultRole::cases(),
-            self::TriggerRuns => [DefaultRole::ReconAnalyst, DefaultRole::FinanceManager],
+            self::TriggerRuns, self::ConfirmMatches => [DefaultRole::ReconAnalyst, DefaultRole::FinanceManager],
             self::ExportResults => [DefaultRole::ReconAnalyst, DefaultRole::FinanceManager, DefaultRole::Auditor],
             self::ExportResultsUnmasked => [DefaultRole::FinanceManager],
             self::ManageConfig => [DefaultRole::Administrator],

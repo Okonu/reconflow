@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Reconciliation\Engine;
 
+use Modules\Reconciliation\Rules\ApplyManualMatches;
 use Modules\Reconciliation\Rules\ClassifyLeftovers;
 use Modules\Reconciliation\Rules\DetectDuplicatePayments;
 use Modules\Reconciliation\Rules\EvaluatePairs;
@@ -18,6 +19,7 @@ final class ReconciliationEngine
 
         foreach ([
             new DetectDuplicatePayments,
+            new ApplyManualMatches,
             MatchByReference::currentDay(),
             MatchByReference::priorDay(),
             new MatchFuzzy,

@@ -27,7 +27,8 @@ final class MatchFuzzy
 
         $saleCandidates = [];
         $paymentDegree = [];
-        foreach ($state->sales as $saleKey => $sale) {
+        $carried = array_filter($state->priorItems, fn (SaleInput $s): bool => $s->origin === SaleInput::CARRIED);
+        foreach ([...$state->sales, ...$carried] as $saleKey => $sale) {
             foreach ($byPhone[$sale->phone] ?? [] as $paymentKey) {
                 $payment = $state->payments[$paymentKey];
                 if (abs($payment->amountCents - $sale->expectedCents) <= $tolerance && abs($payment->paidAt - $sale->soldAt) <= $window) {
@@ -40,10 +41,17 @@ final class MatchFuzzy
         foreach ($saleCandidates as $saleKey => $paymentKeys) {
             $paymentKey = $paymentKeys[0];
             if (count($paymentKeys) === 1 && $paymentDegree[$paymentKey] === 1) {
-                $sale = $state->sales[$saleKey];
+                $sale = $state->sales[$saleKey] ?? $state->priorItems[$saleKey];
                 $payment = $state->payments[$paymentKey];
-                $next->pairs[] = new Pair($sale, [$payment], 'R3', $this->confidence($sale, $payment, $tolerance, $window));
-                unset($next->sales[$saleKey], $next->payments[$paymentKey]);
+                $pair = new Pair($sale, [$payment], 'R3', $this->confidence($sale, $payment, $tolerance, $window));
+                if ($sale->isPrior()) {
+                    $next->priorPairs[] = $pair;
+                    unset($next->priorItems[$saleKey]);
+                } else {
+                    $next->pairs[] = $pair;
+                    unset($next->sales[$saleKey]);
+                }
+                unset($next->payments[$paymentKey]);
 
                 continue;
             }
