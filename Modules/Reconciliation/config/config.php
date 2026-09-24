@@ -13,5 +13,7 @@ return [
         'schedule_time' => env('RECON_SCHEDULE_TIME', '06:00'),
         'blocked_retry_minutes' => (int) env('RECON_BLOCKED_RETRY_MINUTES', 30),
         'blocked_max_attempts' => (int) env('RECON_BLOCKED_MAX_ATTEMPTS', 12),
+        'revenue_account_prefix' => env('RECON_REVENUE_ACCOUNT_PREFIX', '4000'),
+        'adjustment_journal_prefix' => env('RECON_ADJUSTMENT_JOURNAL_PREFIX', 'ADJ-'),
     ],
 ];

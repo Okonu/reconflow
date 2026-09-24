@@ -17,4 +17,6 @@ enum ReconAuditAction: string
     case ItemReclassified = 'item.reclassified';
     case ItemReopened = 'item.reopened';
     case ManualMatchConfirmed = 'match.manual_confirmed';
+    case FuzzyMatchConfirmed = 'match.fuzzy_confirmed';
+    case FuzzyMatchRejected = 'match.fuzzy_rejected';
 }

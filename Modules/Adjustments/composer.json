@@ -1,0 +1,22 @@
+{
+    "name": "reconflow/adjustments",
+    "description": "ReconFlow Adjustments module",
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Adjustments\\": "app/",
+            "Modules\\Adjustments\\Database\\Factories\\": "database/factories/",
+            "Modules\\Adjustments\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Adjustments\\Tests\\": "tests/"
+        }
+    }
+}

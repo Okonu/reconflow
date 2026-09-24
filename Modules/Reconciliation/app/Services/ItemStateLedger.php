@@ -13,6 +13,7 @@ use Modules\Reconciliation\Engine\SaleInput;
 use Modules\Reconciliation\Enums\ItemState;
 use Modules\Reconciliation\Enums\ReconAuditAction;
 use Modules\Reconciliation\Enums\ReconStatus;
+use Modules\Reconciliation\Events\ItemStateChanged;
 use Modules\Reconciliation\Models\ItemStateRecord;
 use Modules\Reconciliation\Models\ReconRun;
 use Modules\Reconciliation\Support\Cents;
@@ -71,16 +72,17 @@ final class ItemStateLedger
         return $items;
     }
 
-    public function resolveManually(int $resultId, string $date, string $reason, ReconStatus $effective): void
+    public function resolveManually(int $resultId, string $date, string $reason, ReconStatus $effective, ItemState $state = ItemState::Resolved): void
     {
         ItemStateRecord::query()->updateOrCreate(['result_id' => $resultId], [
             'business_date' => $date,
-            'state' => ItemState::Resolved,
+            'state' => $state,
             'effective_status' => $effective,
             'resolved_by_run_id' => null,
             'resolved_by_result_id' => null,
             'reason' => $reason,
         ]);
+        ItemStateChanged::dispatch($resultId, $state, $effective, $reason);
     }
 
     public function releaseDecisionsBy(array $runIds, ReconRun $newRun): int
@@ -144,5 +146,6 @@ final class ItemStateLedger
             'resolved_by_result_id' => $byResultId,
             'reason' => $reason,
         ]);
+        ItemStateChanged::dispatch($resultId, $state, $effective, $reason);
     }
 }

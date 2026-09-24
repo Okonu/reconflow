@@ -3,13 +3,11 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Modules\Audit\Models\AuditEvent;
 use Modules\Ingestion\Actions\SeedDemoData;
 use Modules\Ingestion\Enums\SourceType;
 use Modules\Ingestion\Models\PaymentRecord;
 use Modules\Ingestion\Models\SourceBatch;
-use Modules\Ingestion\Services\MockSourceStore;
 use Modules\Reconciliation\Actions\ReconcileDate;
 use Modules\Reconciliation\DTOs\RunRequest;
 use Modules\Reconciliation\Enums\RunTrigger;
@@ -75,22 +73,6 @@ it('marks the next day stale when an earlier day is re-run', function (): void {
     expect($dayTwo->fresh()->stale_at)->not->toBeNull()
         ->and(AuditEvent::query()->where('action', 'run.marked_stale')->exists())->toBeTrue();
 });
-
-function seedPendingSale(): array
-{
-    app(SeedDemoData::class)->handle(1, 20, 5, '2026-09-21', ingest: false);
-    DB::table('mock_source_rows')->where('source', 'payments')->delete();
-    $sale = ['transaction_id' => 'TUP-S-990001', 'business_date' => '2026-09-21', 'timestamp' => '2026-09-21 22:30:00', 'agent_id' => 'AG-001', 'customer_phone' => '254700990001', 'region' => 'Coast', 'product_sku' => 'SOLAR-LAMP-S1', 'expected_amount' => '28.00', 'currency' => 'USD', 'payment_reference' => 'TUP-S-990001'];
-    $posting = ['journal_id' => 'JNL-2026-990001', 'posting_date' => '2026-09-21', 'transaction_id' => 'TUP-S-990001', 'account' => '4000-SALES-CASH', 'amount' => '28.00', 'currency' => 'USD', 'status' => 'POSTED'];
-    $store = app(MockSourceStore::class);
-    $store->replaceDay(SourceType::Sales, '2026-09-21', [$sale]);
-    $store->replaceDay(SourceType::Postings, '2026-09-21', [$posting]);
-    $store->replaceDay(SourceType::Payments, '2026-09-21', [['payment_id' => 'SUNRELATED1', 'timestamp' => '2026-09-21 09:00:00', 'channel' => 'BANK', 'payer_phone' => '254700111111', 'amount' => '5.00', 'currency' => 'USD', 'reference' => 'ACC 1']]);
-    $store->replaceDay(SourceType::Sales, '2026-09-22', [[...$sale, 'transaction_id' => 'TUP-S-990002', 'payment_reference' => 'TUP-S-990002', 'business_date' => '2026-09-22', 'timestamp' => '2026-09-22 10:00:00']]);
-    $store->replaceDay(SourceType::Postings, '2026-09-22', [[...$posting, 'journal_id' => 'JNL-2026-990002', 'transaction_id' => 'TUP-S-990002', 'posting_date' => '2026-09-22']]);
-
-    return [$sale, $store];
-}
 
 it('carries a pending-timing sale into the next run and clears it when paid next day', function (): void {
     [, $store] = seedPendingSale();

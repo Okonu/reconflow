@@ -16,4 +16,7 @@ parameters:
         - Modules/Audit/database/migrations
         - Modules/Ingestion/database/migrations
         - Modules/Reconciliation/database/migrations
+        - Modules/ExceptionManagement/database/migrations
+        - Modules/Adjustments/database/migrations
+        - Modules/Notifications/database/migrations
     treatPhpDocTypesAsCertain: false

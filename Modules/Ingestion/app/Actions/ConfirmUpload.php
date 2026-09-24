@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Ingestion\Actions;
 
+use App\Contracts\BusinessDateLock;
 use App\Exceptions\DomainException;
 use Illuminate\Support\Facades\DB;
 use Modules\Audit\Services\AuditLogger;
@@ -28,11 +29,15 @@ final class ConfirmUpload
         private readonly BatchValidator $validator,
         private readonly BatchWriter $writer,
         private readonly AuditLogger $audit,
+        private readonly BusinessDateLock $locks,
     ) {}
 
     public function handle(User $user, UploadStaging $staging, ?ImportMode $mode): SourceBatch
     {
         $this->assertConfirmable($staging);
+        if ($this->locks->isLocked($staging->business_date->toDateString())) {
+            throw DomainException::conflict('This business date is signed off. A Finance Manager must reopen it before new data can be imported.');
+        }
         $source = $staging->source;
         $date = $staging->business_date->toDateString();
         $hasData = $this->dataset->hasData($source, $date);

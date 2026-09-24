@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\Reconciliation\Actions;
 
 use App\Contracts\AuditActor;
+use App\Contracts\BusinessDateLock;
+use App\Exceptions\DomainException;
 use App\Support\BusinessCalendar;
 use Illuminate\Support\Facades\DB;
 use Modules\Audit\Services\AuditLogger;
@@ -19,10 +21,15 @@ final class QueueRun
     public function __construct(
         private readonly RuleConfigService $configs,
         private readonly AuditLogger $audit,
+        private readonly BusinessDateLock $locks,
     ) {}
 
     public function handle(RunRequest $request, AuditActor|string|null $actor): ReconRun
     {
+        if ($this->locks->isLocked($request->businessDate)) {
+            throw DomainException::conflict("{$request->businessDate} is signed off. A Finance Manager must reopen it before it can be re-run.");
+        }
+
         return DB::transaction(function () use ($request, $actor): ReconRun {
             DB::select('select pg_advisory_xact_lock(?)', [crc32('recon-run:'.$request->businessDate)]);
             $config = $this->configs->current();

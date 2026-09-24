@@ -1,0 +1,11 @@
+{
+    "name": "Adjustments",
+    "alias": "adjustments",
+    "description": "ReconFlow Adjustments module",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Adjustments\\Providers\\AdjustmentsServiceProvider"
+    ],
+    "files": []
+}

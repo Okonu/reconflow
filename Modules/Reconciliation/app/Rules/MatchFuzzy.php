@@ -31,7 +31,7 @@ final class MatchFuzzy
         foreach ([...$state->sales, ...$carried] as $saleKey => $sale) {
             foreach ($byPhone[$sale->phone] ?? [] as $paymentKey) {
                 $payment = $state->payments[$paymentKey];
-                if (abs($payment->amountCents - $sale->expectedCents) <= $tolerance && abs($payment->paidAt - $sale->soldAt) <= $window) {
+                if (abs($payment->amountCents - $sale->expectedCents) <= $tolerance && abs($payment->paidAt - $sale->soldAt) <= $window && ! isset($input->rejectedPairs[$sale->transactionId.'|'.$payment->identity()])) {
                     $saleCandidates[$saleKey][] = $paymentKey;
                     $paymentDegree[$paymentKey] = ($paymentDegree[$paymentKey] ?? 0) + 1;
                 }

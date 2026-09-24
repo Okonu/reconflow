@@ -4,5 +4,8 @@
     "Rbac": true,
     "DataProtection": true,
     "Ingestion": true,
-    "Reconciliation": true
+    "Reconciliation": true,
+    "ExceptionManagement": true,
+    "Adjustments": true,
+    "Notifications": true
 }

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Audit\Services\AuditLogger;
 use Modules\Rbac\Enums\RbacAuditAction;
 use Modules\Rbac\Models\Permission;
+use Modules\Rbac\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 final class PermissionCatalogue
@@ -41,16 +42,34 @@ final class PermissionCatalogue
                 );
             }
             Permission::query()->where('guard_name', self::GUARD)->whereIn('name', $removed)->delete();
+            $granted = $existing->isEmpty() ? [] : $this->grantToTemplateRoles(array_map(fn (string $code) => $wanted[$code], $added));
 
             if ($added !== [] || $removed !== []) {
                 $this->audit->record(RbacAuditAction::PermissionsSynced, entityType: 'permission', payload: [
                     'added' => $added,
                     'removed' => $removed,
+                    'granted_to_template_roles' => $granted,
                 ]);
             }
         });
 
         $this->registrar->forgetCachedPermissions();
+    }
+
+    private function grantToTemplateRoles(array $permissions): array
+    {
+        $granted = [];
+        foreach ($permissions as $permission) {
+            foreach ($permission->defaultRoles() as $template) {
+                $role = Role::query()->where('name', $template->value)->where('guard_name', self::GUARD)->first();
+                if ($role !== null) {
+                    $role->givePermissionTo((string) $permission->value);
+                    $granted[$role->name][] = (string) $permission->value;
+                }
+            }
+        }
+
+        return $granted;
     }
 
     public function assertKnown(array $codes): void

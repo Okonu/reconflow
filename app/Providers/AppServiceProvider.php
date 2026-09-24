@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Contracts\BusinessDateLock;
 use App\Support\Authorization\PermissionRegistry;
+use App\Support\NoDateLock;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Support\ServiceProvider;
@@ -15,6 +17,7 @@ final class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(PermissionRegistry::class);
+        $this->app->bindIf(BusinessDateLock::class, NoDateLock::class);
     }
 
     public function boot(): void

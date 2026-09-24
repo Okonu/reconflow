@@ -39,6 +39,13 @@ final class ReconResult extends Model
         return $this->belongsTo(ReconRun::class, 'run_id');
     }
 
+    public function runRecord(): ?ReconRun
+    {
+        $run = $this->run;
+
+        return $run instanceof ReconRun ? $run : null;
+    }
+
     public function itemState(): HasOne
     {
         return $this->hasOne(ItemStateRecord::class, 'result_id');

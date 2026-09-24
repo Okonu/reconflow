@@ -53,6 +53,29 @@ final class MockSourceStore
         }
     }
 
+    public function appendRows(SourceType $source, string $recordDate, array $rows): void
+    {
+        $sequence = (int) DB::table('mock_source_rows')->where('source', $source->value)->whereDate('record_date', $recordDate)->max('sequence');
+        foreach ($rows as $row) {
+            $sequence++;
+            DB::table('mock_source_rows')->insert([
+                'source' => $source->value,
+                'record_date' => $recordDate,
+                'occurred_at' => $this->occurredAt($source, $row),
+                'sequence' => $sequence,
+                'payload' => json_encode($row, JSON_THROW_ON_ERROR),
+            ]);
+        }
+    }
+
+    public function reverseJournal(string $journalId): int
+    {
+        return DB::table('mock_source_rows')
+            ->where('source', SourceType::Postings->value)
+            ->whereRaw("payload->>'journal_id' = ?", [$journalId])
+            ->update(['payload' => DB::raw("jsonb_set(payload, '{status}', '\"REVERSED\"')")]);
+    }
+
     public function dates(): array
     {
         return MockSourceRow::query()->where('source', SourceType::Sales->value)

@@ -57,7 +57,7 @@ final class EvaluatePairs
             default => [ReconStatus::MatchedTolerance, 'R1+R4'],
         };
 
-        $postingStatus = self::postingStatus($lines, $pair->sale->expectedCents);
+        $postingStatus = self::postingStatus($lines, $pair->sale->expectedCents, $input->config->adjustmentJournalPrefix);
         if ($postingStatus !== null) {
             [$status, $rule] = [$postingStatus, 'R6'];
         }
@@ -65,14 +65,18 @@ final class EvaluatePairs
         return new ResultItem($section, $status, $rule, $pair->sale, $pair->payments, $posted['amount'], $posted['journal'], $pair->confidence, $tag, $flags);
     }
 
-    public static function postingStatus(array $lines, int $expectedCents): ?ReconStatus
+    public static function postingStatus(array $lines, int $expectedCents, string $adjustmentPrefix = 'ADJ-'): ?ReconStatus
     {
-        $journals = array_unique(array_map(fn (PostingLine $l): string => $l->journalId, $lines));
+        $original = array_unique(array_map(
+            fn (PostingLine $l): string => $l->journalId,
+            array_filter($lines, fn (PostingLine $l): bool => ! str_starts_with($l->journalId, $adjustmentPrefix)),
+        ));
+        $posted = array_sum(array_map(fn (PostingLine $l): int => $l->amountCents, $lines));
 
         return match (true) {
-            $journals === [] => ReconStatus::MissingPosting,
-            count($journals) > 1 => ReconStatus::DuplicatePosting,
-            $lines[0]->amountCents !== $expectedCents => ReconStatus::PostingMismatch,
+            $lines === [] => ReconStatus::MissingPosting,
+            count($original) > 1 => ReconStatus::DuplicatePosting,
+            $posted !== $expectedCents => ReconStatus::PostingMismatch,
             default => null,
         };
     }

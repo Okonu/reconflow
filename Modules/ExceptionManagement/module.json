@@ -1,0 +1,11 @@
+{
+    "name": "ExceptionManagement",
+    "alias": "exceptionmanagement",
+    "description": "ReconFlow ExceptionManagement module",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ExceptionManagement\\Providers\\ExceptionManagementServiceProvider"
+    ],
+    "files": []
+}

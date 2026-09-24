@@ -10,4 +10,5 @@ export interface SharedProps {
     app: { name: string; environment: string };
     auth: { user: AuthUser | null; permissions: string[] };
     flash: { success: string | null; error: string | null };
+    notifications?: { unread: number };
 }

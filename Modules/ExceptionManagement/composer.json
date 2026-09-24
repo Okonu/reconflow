@@ -1,0 +1,22 @@
+{
+    "name": "reconflow/exception-management",
+    "description": "ReconFlow ExceptionManagement module",
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\ExceptionManagement\\": "app/",
+            "Modules\\ExceptionManagement\\Database\\Factories\\": "database/factories/",
+            "Modules\\ExceptionManagement\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\ExceptionManagement\\Tests\\": "tests/"
+        }
+    }
+}

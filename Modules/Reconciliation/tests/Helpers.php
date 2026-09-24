@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
+use Modules\Ingestion\Actions\SeedDemoData;
+use Modules\Ingestion\Enums\SourceType;
+use Modules\Ingestion\Services\MockSourceStore;
 use Modules\Reconciliation\Actions\ReconcileDate;
 use Modules\Reconciliation\DTOs\RuleConfig;
 use Modules\Reconciliation\DTOs\RunRequest;
@@ -133,4 +137,44 @@ function statusOf(array $result, ?string $txn, ?string $payment = null): ?string
     }
 
     return null;
+}
+
+function seedPendingSale(): array
+{
+    app(SeedDemoData::class)->handle(1, 20, 5, '2026-09-21', ingest: false);
+    DB::table('mock_source_rows')->where('source', 'payments')->delete();
+    $sale = ['transaction_id' => 'TUP-S-990001', 'business_date' => '2026-09-21', 'timestamp' => '2026-09-21 22:30:00', 'agent_id' => 'AG-001', 'customer_phone' => '254700990001', 'region' => 'Coast', 'product_sku' => 'SOLAR-LAMP-S1', 'expected_amount' => '28.00', 'currency' => 'USD', 'payment_reference' => 'TUP-S-990001'];
+    $posting = ['journal_id' => 'JNL-2026-990001', 'posting_date' => '2026-09-21', 'transaction_id' => 'TUP-S-990001', 'account' => '4000-SALES-CASH', 'amount' => '28.00', 'currency' => 'USD', 'status' => 'POSTED'];
+    $store = app(MockSourceStore::class);
+    $store->replaceDay(SourceType::Sales, '2026-09-21', [$sale]);
+    $store->replaceDay(SourceType::Postings, '2026-09-21', [$posting]);
+    $store->replaceDay(SourceType::Payments, '2026-09-21', [['payment_id' => 'SUNRELATED1', 'timestamp' => '2026-09-21 09:00:00', 'channel' => 'BANK', 'payer_phone' => '254700111111', 'amount' => '5.00', 'currency' => 'USD', 'reference' => 'ACC 1']]);
+    $store->replaceDay(SourceType::Sales, '2026-09-22', [[...$sale, 'transaction_id' => 'TUP-S-990002', 'payment_reference' => 'TUP-S-990002', 'business_date' => '2026-09-22', 'timestamp' => '2026-09-22 10:00:00']]);
+    $store->replaceDay(SourceType::Postings, '2026-09-22', [[...$posting, 'journal_id' => 'JNL-2026-990002', 'transaction_id' => 'TUP-S-990002', 'posting_date' => '2026-09-22']]);
+
+    return [$sale, $store];
+}
+
+function seedLatePaymentScenario(string $latePayer = '254700480480', string $lateAmount = '480.00'): array
+{
+    $store = app(MockSourceStore::class);
+    $sale = fn (string $id, string $date, string $time, string $phone, string $amount) => ['transaction_id' => $id, 'business_date' => $date, 'timestamp' => "{$date} {$time}", 'agent_id' => 'AG-001', 'customer_phone' => $phone, 'region' => 'Coast', 'product_sku' => 'SOLAR-LAMP-S1', 'expected_amount' => $amount, 'currency' => 'USD', 'payment_reference' => $id];
+    $posting = fn (string $id, string $date, string $amount) => ['journal_id' => 'JNL-'.$id, 'posting_date' => $date, 'transaction_id' => $id, 'account' => '4000-SALES-CASH', 'amount' => $amount, 'currency' => 'USD', 'status' => 'POSTED'];
+    $payment = fn (string $id, string $at, string $phone, string $amount, ?string $ref) => ['payment_id' => $id, 'timestamp' => $at, 'channel' => 'MOBILE_MONEY', 'payer_phone' => $phone, 'amount' => $amount, 'currency' => 'USD', 'reference' => $ref];
+
+    $store->replaceDay(SourceType::Sales, '2026-09-19', [$sale('TUP-S-480001', '2026-09-19', '10:00:00', '254700480480', '480.00'), $sale('TUP-S-480002', '2026-09-19', '11:00:00', '254700111222', '10.00')]);
+    $store->replaceDay(SourceType::Postings, '2026-09-19', [$posting('TUP-S-480001', '2026-09-19', '480.00'), $posting('TUP-S-480002', '2026-09-19', '10.00')]);
+    $store->replaceDay(SourceType::Payments, '2026-09-19', [$payment('SPAID19', '2026-09-19 11:30:00', '254700111222', '10.00', 'TUP-S-480002')]);
+
+    $store->replaceDay(SourceType::Sales, '2026-09-22', [$sale('TUP-S-480003', '2026-09-22', '09:00:00', '254700333444', '20.00')]);
+    $store->replaceDay(SourceType::Postings, '2026-09-22', [$posting('TUP-S-480003', '2026-09-22', '20.00')]);
+    $store->replaceDay(SourceType::Payments, '2026-09-22', [
+        $payment('SPAID22', '2026-09-22 09:30:00', '254700333444', '20.00', 'TUP-S-480003'),
+        $payment('SLATE480', '2026-09-22 14:00:00', $latePayer, $lateAmount, null),
+    ]);
+
+    $saleResult = reconcile('2026-09-19', refresh: true)->results()->where('transaction_id', 'TUP-S-480001')->firstOrFail();
+    $dayFour = reconcile('2026-09-22', refresh: true);
+
+    return [$saleResult, $dayFour];
 }

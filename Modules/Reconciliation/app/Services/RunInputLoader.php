@@ -35,7 +35,8 @@ final class RunInputLoader
             sales: $this->sales($batchIds[SourceType::Sales->value] ?? null),
             priorItems: $priorItems,
             payments: $this->payments($batchIds[SourceType::Payments->value] ?? null, $this->claimedByPreviousDay($date), $config->timezone),
-            postingsByTransaction: $this->postings($batchIds[SourceType::Postings->value] ?? null, [...$priorItems, ...array_values($manualMatches)]),
+            postingsByTransaction: $this->postings($batchIds[SourceType::Postings->value] ?? null, [...$priorItems, ...array_values($manualMatches)], $config->revenueAccountPrefix),
+            rejectedPairs: $this->rejectedPairs($businessDate),
             timingCutoffAt: $date->setTimeFromTimeString($config->timingCutoff)->getTimestamp(),
             dayEndsAt: $date->addDay()->getTimestamp(),
             config: $config,
@@ -89,7 +90,7 @@ final class RunInputLoader
         return $payments;
     }
 
-    private function postings(?int $batchId, array $priorItems): array
+    private function postings(?int $batchId, array $priorItems, string $revenuePrefix): array
     {
         $batchIds = $batchId === null ? [] : [$batchId];
         foreach (array_unique(array_map(fn (SaleInput $s) => $s->priorDate, $priorItems)) as $date) {
@@ -99,11 +100,20 @@ final class RunInputLoader
             }
         }
         $byTransaction = [];
-        foreach (DB::table('posting_records')->whereIn('batch_id', $batchIds)->where('status', PostingStatus::Posted->value)->orderBy('id')->cursor() as $row) {
+        foreach (DB::table('posting_records')->whereIn('batch_id', $batchIds)->where('status', PostingStatus::Posted->value)->where('account', 'like', $revenuePrefix.'%')->orderBy('id')->cursor() as $row) {
             $byTransaction[(string) $row->transaction_id][] = new PostingLine((string) $row->journal_id, (string) $row->transaction_id, Cents::fromDecimal((string) $row->amount));
         }
 
         return $byTransaction;
+    }
+
+    private function rejectedPairs(string $businessDate): array
+    {
+        return DB::table('recon_match_reviews')->where('decision', 'rejected')
+            ->whereBetween('business_date', [CarbonImmutable::parse($businessDate)->subDays(7)->toDateString(), $businessDate])
+            ->get(['transaction_id', 'payment_identity'])
+            ->mapWithKeys(fn ($r) => [$r->transaction_id.'|'.$r->payment_identity => true])
+            ->all();
     }
 
     private function manualMatches(string $businessDate): array

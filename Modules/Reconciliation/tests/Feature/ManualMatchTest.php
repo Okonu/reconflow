@@ -3,35 +3,9 @@
 declare(strict_types=1);
 
 use Modules\Audit\Models\AuditEvent;
-use Modules\Ingestion\Enums\SourceType;
-use Modules\Ingestion\Services\MockSourceStore;
 use Modules\Reconciliation\Models\ItemStateRecord;
 use Modules\Reconciliation\Models\ManualMatch;
 use Modules\Reconciliation\Models\ReconResult;
-
-function seedLatePaymentScenario(string $latePayer = '254700480480', string $lateAmount = '480.00'): array
-{
-    $store = app(MockSourceStore::class);
-    $sale = fn (string $id, string $date, string $time, string $phone, string $amount) => ['transaction_id' => $id, 'business_date' => $date, 'timestamp' => "{$date} {$time}", 'agent_id' => 'AG-001', 'customer_phone' => $phone, 'region' => 'Coast', 'product_sku' => 'SOLAR-LAMP-S1', 'expected_amount' => $amount, 'currency' => 'USD', 'payment_reference' => $id];
-    $posting = fn (string $id, string $date, string $amount) => ['journal_id' => 'JNL-'.$id, 'posting_date' => $date, 'transaction_id' => $id, 'account' => '4000-SALES-CASH', 'amount' => $amount, 'currency' => 'USD', 'status' => 'POSTED'];
-    $payment = fn (string $id, string $at, string $phone, string $amount, ?string $ref) => ['payment_id' => $id, 'timestamp' => $at, 'channel' => 'MOBILE_MONEY', 'payer_phone' => $phone, 'amount' => $amount, 'currency' => 'USD', 'reference' => $ref];
-
-    $store->replaceDay(SourceType::Sales, '2026-09-19', [$sale('TUP-S-480001', '2026-09-19', '10:00:00', '254700480480', '480.00'), $sale('TUP-S-480002', '2026-09-19', '11:00:00', '254700111222', '10.00')]);
-    $store->replaceDay(SourceType::Postings, '2026-09-19', [$posting('TUP-S-480001', '2026-09-19', '480.00'), $posting('TUP-S-480002', '2026-09-19', '10.00')]);
-    $store->replaceDay(SourceType::Payments, '2026-09-19', [$payment('SPAID19', '2026-09-19 11:30:00', '254700111222', '10.00', 'TUP-S-480002')]);
-
-    $store->replaceDay(SourceType::Sales, '2026-09-22', [$sale('TUP-S-480003', '2026-09-22', '09:00:00', '254700333444', '20.00')]);
-    $store->replaceDay(SourceType::Postings, '2026-09-22', [$posting('TUP-S-480003', '2026-09-22', '20.00')]);
-    $store->replaceDay(SourceType::Payments, '2026-09-22', [
-        $payment('SPAID22', '2026-09-22 09:30:00', '254700333444', '20.00', 'TUP-S-480003'),
-        $payment('SLATE480', '2026-09-22 14:00:00', $latePayer, $lateAmount, null),
-    ]);
-
-    $saleResult = reconcile('2026-09-19', refresh: true)->results()->where('transaction_id', 'TUP-S-480001')->firstOrFail();
-    $dayFour = reconcile('2026-09-22', refresh: true);
-
-    return [$saleResult, $dayFour];
-}
 
 it('suggests an unmatched later payment from the same phone within tolerance as a possible match', function (): void {
     [$sale, $dayFour] = seedLatePaymentScenario();

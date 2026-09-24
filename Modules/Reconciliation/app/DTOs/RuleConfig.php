@@ -20,6 +20,8 @@ final readonly class RuleConfig
         public int $blockedRetryMinutes,
         public int $blockedMaxAttempts,
         public string $timezone,
+        public string $revenueAccountPrefix = '4000',
+        public string $adjustmentJournalPrefix = 'ADJ-',
         public ?int $versionId = null,
         public ?int $version = null,
     ) {}
@@ -38,6 +40,8 @@ final readonly class RuleConfig
             blockedRetryMinutes: (int) $values['blocked_retry_minutes'],
             blockedMaxAttempts: (int) $values['blocked_max_attempts'],
             timezone: (string) ($values['timezone'] ?? config('reconflow.display_timezone')),
+            revenueAccountPrefix: (string) ($values['revenue_account_prefix'] ?? '4000'),
+            adjustmentJournalPrefix: (string) ($values['adjustment_journal_prefix'] ?? 'ADJ-'),
             versionId: $versionId,
             version: $version,
         );
@@ -57,6 +61,8 @@ final readonly class RuleConfig
             'blocked_retry_minutes' => $this->blockedRetryMinutes,
             'blocked_max_attempts' => $this->blockedMaxAttempts,
             'timezone' => $this->timezone,
+            'revenue_account_prefix' => $this->revenueAccountPrefix,
+            'adjustment_journal_prefix' => $this->adjustmentJournalPrefix,
             'version' => $this->version,
         ];
     }

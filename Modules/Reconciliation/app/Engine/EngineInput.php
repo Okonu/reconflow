@@ -18,5 +18,6 @@ final readonly class EngineInput
         public int $dayEndsAt,
         public RuleConfig $config,
         public array $manualMatches = [],
+        public array $rejectedPairs = [],
     ) {}
 }

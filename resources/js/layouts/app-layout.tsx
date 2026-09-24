@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react';
 import type { PropsWithChildren } from 'react';
 import { FlashMessages } from '@/components/flash-messages';
 import { MainNav } from '@/components/main-nav';
+import { NotificationBell } from '@/components/notification-bell';
 import { SyntheticDataNotice } from '@/components/synthetic-data-notice';
 import { Button } from '@/components/ui/button';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -20,6 +21,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
                         <MainNav />
                     </div>
                     <div className="flex items-center gap-3 text-sm">
+                        <NotificationBell />
                         <span className="hidden text-muted-foreground sm:inline">{user?.name}</span>
                         <Button variant="outline" size="sm" onClick={() => router.post(route('logout'))}>
                             Sign out

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 final class IngestionTables implements ResetsDemoData
 {
-    public const TABLES = ['quarantined_rows', 'sales_records', 'payment_records', 'posting_records', 'upload_staging', 'source_batches', 'mock_source_rows'];
+    public const TABLES = ['quarantined_rows', 'sales_records', 'payment_records', 'posting_records', 'upload_staging', 'source_batches', 'mock_source_rows', 'mock_erp_journals'];
 
     public function resetOrder(): int
     {

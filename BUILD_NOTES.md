@@ -20,6 +20,11 @@ Running log of technical choices, simplifications and known limitations. Newest 
 | 2026-09-23 | Local development and tests use the owner's local PostgreSQL 16 (`reconflow`, `reconflow_test`) | Owner | |
 | 2026-09-23 | No comments or docblocks in code | Owner | Names carry intent; explanations live in docs |
 | 2026-09-23 | R6 posting check compares the posted amount with the **expected** amount | Answer key (`Rules reference` sheet) ranks above the brief | The brief said "matched amount"; the golden data gives the same result either way |
+| 2026-09-24 | Exceptions only for roll-up Variance/Exception statuses (and prior-day variants); PENDING_TIMING is a soft exception; MATCHED_FUZZY goes to a "Confirm matches" review list (single and bulk confirm); rejecting one splits it into MISSING_PAYMENT + UNMATCHED_PAYMENT exceptions (audited); unreviewed fuzzy matches block sign-off | Owner | |
+| 2026-09-24 | Exceptions have a stable key (date + transaction_id/payment ids + status family); a re-run re-links same-key exceptions, auto-resolves vanished ones ("Resolved by re-run vN") unless an adjustment is in flight ("Needs review"), closes and links on a family change, and creates new ones; signed-off dates can't be re-run until a Finance Manager reopens them with a reason | Owner | |
+| 2026-09-24 | Severity by value at risk: Low < $50 (SLA 5 days), Medium $50–$499.99 (72 h), High $500–$1,999.99 (24 h, blocks sign-off), Critical ≥ $2,000 (8 h, blocks sign-off, notifies Finance Manager); at least Medium for DUPLICATE_PAYMENT, POSTING_MISMATCH and DUPLICATE_POSTING; PENDING_TIMING always Low with no SLA until escalation; calendar hours; configurable | Owner | |
+| 2026-09-24 | Approved adjustments post balanced journals to `/api/mock/erp/journals` with an idempotency key (same key → original response); config-driven accounts (write-off Dr 6150/Cr 1100; refund Dr 1100/Cr 2150; missing posting Dr 1100/Cr 4000; unmatched payment Dr 1100/Cr 2190 suspense; duplicate posting → reversal); failure simulation toggle → POSTING_FAILED with Retry; posted journals feed the postings connector | Owner | Chart of accounts to be confirmed by Finance |
+| 2026-09-24 | From Phase 4, edge cases are decided with a default and logged under "Open questions" instead of pausing the build | Owner | |
 | 2026-09-24 | Carried PENDING_TIMING sales match next-day payments with R1/R2/R3 (fuzzy flagged needs confirmation, one-to-one with current-day sales); lookback items auto-match on exact reference/split only; same-phone, within-tolerance unmatched payments are offered as possible matches, and an Analyst's confirmation creates an audited manual match resolving the item as "Paid late (D+n), manually matched" | Owner | Phase 3 checkpoint answer |
 | 2026-09-24 | Ingestion and reconciliation are separate: the daily job pulls then reconciles; Run now reconciles loaded data unless "Refresh from sources first" is ticked; one active batch per source per date; the job skips sources whose active batch is manual ("manual upload in effect"); refreshing over an upload needs an explicit keep/replace choice; a pull only creates a new batch if the checksum changed; runs store the exact batch versions used; no active batch means BLOCKED_DATA (except PROVISIONAL runs) | Owner | |
 | 2026-09-24 | Batch versions are immutable, complete snapshots; Append copies the active rows plus the new rows into a new version (`parent_batch_id`, mode PULL / UPLOAD_REPLACE / UPLOAD_APPEND, `manual`, `rows_added`); an append onto a pull sets manual | Owner | Replaces Phase 2's second-active-batch Append |
@@ -33,6 +38,37 @@ Running log of technical choices, simplifications and known limitations. Newest 
 | 2026-09-24 | Duplicate keys: (1) exact duplicate row in a file → keep first, quarantine the copy ("Duplicate row: exact copy of row N"); (2) same transaction_id/journal_id with different content → quarantine **all** rows sharing it ("Conflicting records share <key>"); (3) key already loaded for the date on Append → preview says "already exists for this date: use Replace" and it is not imported; (4) two different POSTED journal_ids for one transaction_id → new status **DUPLICATE_POSTING** (roll-up Exception), REVERSED lines excluded. Payment duplicates stay R5 DUPLICATE_PAYMENT exactly as the answer keys define | Owner | |
 | 2026-09-24 | **Payment ownership:** a payment belongs to its own timestamp date. The D run may match payments from D+1 00:00–06:00 against D sales; a match claims the payment for D. Unmatched grace-window payments are **not** reported as UNMATCHED_PAYMENT on D. The D+1 run excludes payments claimed by the latest D run version and can match D's open PENDING_TIMING sales (auto-resolving them). Re-running D after D+1 exists marks D+1 **STALE** (needs re-run) | Owner | Verified compatible: all 27 grace-window payments in both answer keys are MATCHED |
 | 2026-09-24 | **Run now** defaults to the latest **closed** business date (window closed at D+1 06:00 EAT; same logic as the scheduled job). Any date can be chosen; an open date's run is **PROVISIONAL** (banner, timing exceptions expected, cannot be signed off) | Owner | |
+
+## Open questions (defaults chosen, awaiting owner review)
+
+| # | Question | Default implemented |
+|---|---|---|
+| 1 | Who counts as a preparer for auto-assignment? | Active users with `exceptions.work` but without `runs.signoff`; same region first, then the least loaded, ties by user id. If there are none, the exception stays unassigned |
+| 2 | How is a POSTING_MISMATCH corrected? | `correct_posting` reverses the original ERP journal and reposts at the expected amount (two journals, one idempotency key) |
+| 3 | A re-run frees an item the ledger had resolved. Does its closed exception reopen? | No. Only a new exception result opens a new exception, linked to its predecessor |
+| 4 | What does "Carried from D" mean in the queue? | Open exceptions whose business date is before the latest closed business date |
+| 5 | Can uploads be confirmed for a signed-off date? | No: signed-off dates block both re-runs and upload confirmation until reopened |
+| 6 | Chart of accounts for journals | 1100 receivables, 6150 bad-debt write-off, 2150 refunds payable, 2190 unidentified receipts suspense, 4000 sales cash. Needs Finance confirmation (docs/assumptions.md) |
+| 7 | Which posting lines count in the posting check? | Only revenue-account lines (prefix `4000`). `ADJ-` journals are summed into the posted amount but never count as duplicate postings |
+| 8 | An adjustment is in flight and a re-run clears the exception | The exception stays open, flagged "needs review"; the adjustment is not cancelled automatically |
+| 9 | Critical-exception alerts | One aggregated notification per run (count and value at risk) to holders of `notifications.critical_alerts`, not one per exception |
+| 10 | New permissions added by an upgrade | Granted automatically to the matching default template roles the first time they appear; roles edited at runtime keep their edits for existing permissions |
+| 11 | Slack and email content | Aggregates only (counts, amounts, dates, links). No phone numbers or customer identifiers leave the system |
+| 12 | Daily summary time | 07:00 Africa/Nairobi (`NOTIFY_DAILY_SUMMARY_TIME`), after the 06:00 reconciliation |
+
+## Phase 4: Workflow
+
+### What exists
+- **ExceptionManagement:** exceptions keyed by identity and status family, which survive re-runs (relink, auto-resolve, reclassify, escalate timing items). Severity and SLA come from the value at risk; owners are auto-assigned; state transitions are guarded. The module also has comments and a timeline, bulk assign, sign-off with blockers and acknowledgement, a date lock, and reopening by a Finance Manager.
+- **Adjustments:** write-off, refund, post-missing, correct-posting, reverse-duplicate and suspense adjustments. Maker-checker is enforced by policy, as is the $1,000 Finance Manager threshold. Posting to the mock ERP is balanced and idempotent; a failed posting goes to POSTING_FAILED and can be retried. There is an ERP-failure simulation toggle.
+- **Fuzzy review:** a list to confirm or reject fuzzy matches. Rejecting one splits it into missing-payment and unmatched-payment exceptions, and the rejection is remembered on re-runs.
+- **Notifications:** in-app bell, plus optional email (`NOTIFY_MAIL_ENABLED`) and Slack (`SLACK_WEBHOOK_URL`). It covers run failed/blocked alerts, aggregated critical-exception alerts and a scheduled daily summary.
+- **Pages:** exception queue, exception detail (records side by side, rule explanation, timeline, work actions, adjustment panel, possible late payments), approvals inbox, fuzzy matches and sign-off. Module panels plug into exception detail through `resources/js/lib/contributions.ts`.
+
+### Deferred until all phases are done (owner instruction)
+- Test run: `Modules/ExceptionManagement/tests` and `Modules/Adjustments/tests` are written. Three known failures remain: the SoD message assertion (the analyst lacks `adjustments.approve`, so the permission message wins) and two scenarios that reference transaction IDs not present in the seeded late-payment data.
+- Permission contract entries for the new routes.
+- The Larastan run after the typed-relation fixes.
 
 ## Phase 3: Engine
 
